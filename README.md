@@ -3,6 +3,8 @@ SpotHoles é uma aplicação móvel para alertas de riscos no pavimento, com foc
 A proposta é desenvolver uma solução que permita de condutores façam viagens mais seguras por meio de alertas sobre riscos no pavimento, principalmente buracos nas vias.
 O condutor poderá montar uma rota e monitorar a viagem por meio da aplicação no smartphone, porém também poderá acompanhar o trajeto e receber alertas sobre o risco através de um relógio inteligente.
 
+Mais detalhes estão disponívels na [wiki](https://github.com/DiFeitoza/spotholes/wiki) do projeto.
+
 ## Problema
 Os acidentes de trânsito são uma preocupação constante para a sociedade, tendo em vista os impactos sociais e financeiros. Quando se trata de veículos motorizados de duas rodas a probabilidade de danos graves em acidentes de trânsito é maior. Com o avanço da tecnologia muitas soluções são propostas para aumentar a segurança dos veículos e reduzir acidentes, acontece que o avanço da tecnologia nem sempre alcança todos os modais de transporte da mesma forma, havendo um atraso no surgimento de soluções para os veículos motorizados de duas rodas. Entre os riscos de acidentes estão os buracos nas vias, que se agravam nos períodos de estiagem e ocasionam em acidentes prejuízos para os motoristas. A burocracia somada à limitação de recursos do estado, muitas vezes não consegue lidar com o problema das estradas, então surge a necessidade de propor soluções para este problema, a fim de tentar reduzir o número de acidentes e em decorrência disso, os danos associados.
 
