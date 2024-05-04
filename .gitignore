@@ -1,2 +1,5 @@
 # VS Code related
 .vscode/
+
+# Environment
+.env

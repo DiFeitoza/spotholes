@@ -1,7 +1,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EnvironmentConfig {
-  static final String? _googleApiKey = dotenv.env['GOOGLE_API_KEY'];
+  static final String? _googleApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
 
   static String? get googleApiKey {
     if (_googleApiKey == null) {
