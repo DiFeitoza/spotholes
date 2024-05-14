@@ -7,6 +7,7 @@ import 'package:location/location.dart';
 import 'package:spotholes_android/utilities/constants.dart';
 import 'package:spotholes_android/database/mock_json_db.dart';
 import 'package:spotholes_android/config/environment_config.dart';
+import 'package:spotholes_android/utilities/image_size_adjust.dart';
 
 class BaseMapPage extends StatefulWidget {
   const BaseMapPage({super.key});
@@ -28,6 +29,7 @@ class BaseMapPageState extends State<BaseMapPage> {
   BitmapDescriptor sourceIcon = BitmapDescriptor.defaultMarker;
   BitmapDescriptor destinationIcon = BitmapDescriptor.defaultMarker;
   BitmapDescriptor currentLocationIcon = BitmapDescriptor.defaultMarker;
+  BitmapDescriptor potholeIcon = BitmapDescriptor.defaultMarker;
 
   final Map<String, Marker> markers = {};
   final Map<String, Marker> baseLocations = {};
@@ -81,6 +83,7 @@ class BaseMapPageState extends State<BaseMapPage> {
     for (final pothole in data) {
       final marker = Marker(
         markerId: MarkerId(pothole['id']),
+        icon: potholeIcon,
         position: pothole['position'],
         infoWindow: InfoWindow(
           title: pothole['label'],
@@ -122,21 +125,27 @@ class BaseMapPageState extends State<BaseMapPage> {
     setState(() {});
   }
 
+  // TODO automatizar ajuste de tamanho de ícones com base no tamanho de tela ou componentes do google maps, em vez de fazer ajuste em hardcode, gerar assets com tamanhos corretos para teste.
   void setCustomMakerIcon() {
-    BitmapDescriptor.fromAssetImage(
-            ImageConfiguration.empty, "assets/pin_source.png")
+    ImageSizeAdjust.getCustomIcon('assets/images/mark_location_blue.png', 80)
         .then((icon) {
       sourceIcon = icon;
     });
-    BitmapDescriptor.fromAssetImage(
-            ImageConfiguration.empty, "assets/pin_destination.png")
+
+    ImageSizeAdjust.getCustomIcon(
+            'assets/images/pin_destination_contrast_shadow_blue.png', 90)
         .then((icon) {
       destinationIcon = icon;
     });
-    BitmapDescriptor.fromAssetImage(
-            ImageConfiguration.empty, "assets/badge.png")
+
+    ImageSizeAdjust.getCustomIcon("assets/images/badge_red.png", 150)
         .then((icon) {
       currentLocationIcon = icon;
+    });
+
+    ImageSizeAdjust.getCustomIcon('assets/images/pothole_sign.png', 80)
+        .then((icon) {
+      potholeIcon = icon;
     });
   }
 
