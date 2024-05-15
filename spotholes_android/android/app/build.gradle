@@ -22,10 +22,15 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+def googleMapsApiKey = localProperties.getProperty('GOOGLE_MAPS_API_KEY')
+if (googleMapsApiKey == null) {
+    googleMapsApiKey = ''
+}
+
 android {
     namespace "br.com.spotholes.android.spotholes_android"
     compileSdk flutter.compileSdkVersion
-    ndkVersion flutter.ndkVersion
+    ndkVersion "26.1.10909125"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -45,10 +50,14 @@ android {
         applicationId "br.com.spotholes.android.spotholes_android"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion flutter.minSdkVersion
+        minSdkVersion 21
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        manifestPlaceholders = [
+            applicationName: "android.app.Application",
+            mapsApiKey: googleMapsApiKey
+        ]
     }
 
     buildTypes {
