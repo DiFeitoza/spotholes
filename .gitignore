@@ -1,0 +1,8 @@
+# VS Code related
+.vscode/
+
+# IntelluJ IDEA (Android Studio) related
+.idea
+
+# Environment
+.env
