@@ -1,12 +1,12 @@
 import 'dart:async';
 
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
-import 'package:spotholes_android/utilities/constants.dart';
-import 'package:spotholes_android/database/mock_json_db.dart';
 import 'package:spotholes_android/config/environment_config.dart';
+import 'package:spotholes_android/utilities/constants.dart';
 import 'package:spotholes_android/utilities/image_size_adjust.dart';
 
 class BaseMapPage extends StatefulWidget {
@@ -17,6 +17,7 @@ class BaseMapPage extends StatefulWidget {
 
 class BaseMapPageState extends State<BaseMapPage> {
   final Completer<GoogleMapController> _controller = Completer();
+  final DatabaseReference databaseReference = FirebaseDatabase.instance.ref();
 
   static const LatLng sourceLocation =
       LatLng(-4.9712212645114935, -39.01834056864541);
@@ -80,18 +81,24 @@ class BaseMapPageState extends State<BaseMapPage> {
 
   void generateMarkers() async {
     markers.clear();
-    for (final pothole in data) {
-      final marker = Marker(
-        markerId: MarkerId(pothole['id']),
-        icon: potholeIcon,
-        position: pothole['position'],
-        infoWindow: InfoWindow(
-          title: pothole['label'],
-          snippet: pothole['location']['road'],
-        ),
-      );
-      markers[pothole['id']] = marker;
-    }
+    databaseReference.child('potholes').once().then((DatabaseEvent event) {
+      List<dynamic>? potholesList = event.snapshot.value as List<dynamic>?;
+      for (final pothole in potholesList!) {
+        final marker = Marker(
+          markerId: MarkerId(pothole['id']),
+          icon: potholeIcon,
+          position: LatLng(
+            pothole['position']['lat'] as double,
+            pothole['position']['long'] as double,
+          ),
+          infoWindow: InfoWindow(
+            title: pothole['label'],
+            snippet: pothole['location']['road'],
+          ),
+        );
+        markers[pothole['id']] = marker;
+      }
+    });
 
     baseLocations['currentLocation'] = Marker(
         markerId: const MarkerId("currentLocation"),
