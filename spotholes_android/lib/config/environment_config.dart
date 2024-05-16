@@ -5,7 +5,7 @@ class EnvironmentConfig {
 
   static String? get googleApiKey {
     if (_googleApiKey == null) {
-      throw Exception('A chave da API do Google não está definida!');
+      throw Exception('A chave da API do Google não está definida no .env do projeto!');
     }
     return _googleApiKey;
   }

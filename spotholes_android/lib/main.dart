@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:spotholes_android/config/environment_config.dart';
 import 'package:spotholes_android/pages/base_map_page.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 void main() async {
   await EnvironmentConfig.loadEnvVariables();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 

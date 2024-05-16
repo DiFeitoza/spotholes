@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "590822430228",
+    "firebase_url": "https://spotholes-app-default-rtdb.firebaseio.com",
+    "project_id": "spotholes-app",
+    "storage_bucket": "spotholes-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:590822430228:android:bd72c9e22908b80786f901",
+        "android_client_info": {
+          "package_name": "br.com.spotholes.android.spotholes_android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCY00W3QQcMs3kSeehJz2qBhJBrI_popKE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
