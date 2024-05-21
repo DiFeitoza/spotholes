@@ -19,38 +19,37 @@ class BaseMapPageState extends State<BaseMapPage> {
   final Completer<GoogleMapController> _controller = Completer();
   final DatabaseReference databaseReference = FirebaseDatabase.instance.ref();
 
-  static const LatLng sourceLocation =
-      LatLng(-4.9712212645114935, -39.01834056864541);
-  static const LatLng destination =
-      LatLng(-4.971373575301382, -39.018458585833024);
+  final Map<String, Marker> markers = {};
+  final Map<String, Marker> baseLocations = {};
 
-  List<LatLng> polylineCoordinates = [];
   LocationData? currentLocation;
+
+  List<LatLng> routePolylineCoordinates = [];
+
+  static const LatLng sourceRouteLocation =
+      LatLng(-4.9712212645114935, -39.01834056864541);
+  static const LatLng destinationRouteLocation =
+      LatLng(-4.971373575301382, -39.018458585833024);
 
   BitmapDescriptor sourceIcon = BitmapDescriptor.defaultMarker;
   BitmapDescriptor destinationIcon = BitmapDescriptor.defaultMarker;
   BitmapDescriptor currentLocationIcon = BitmapDescriptor.defaultMarker;
   BitmapDescriptor potholeIcon = BitmapDescriptor.defaultMarker;
 
-  final Map<String, Marker> markers = {};
-  final Map<String, Marker> baseLocations = {};
-
   var indexRoute = 0;
 
-  void getCurrentLocation() async {
+  void loadCurrentLocation() async {
     Location location = Location();
 
-    location.getLocation().then(
-      (location) {
-        currentLocation = location;
-      },
-    ).then((location) => generateMarkers());
+    currentLocation = await location.getLocation();
+    loadCurrentLocationMark(currentLocation);
 
+    // TODO Verificar o que a linha seguinte faz
     GoogleMapController googleMapController = await _controller.future;
 
     location.onLocationChanged.listen((newLoc) {
       currentLocation = newLoc;
-      updateMarkCurrentLocation(newLoc);
+      loadCurrentLocationMark(newLoc);
       googleMapController.animateCamera(CameraUpdate.newCameraPosition(
           CameraPosition(
               zoom: 18.5,
@@ -58,29 +57,59 @@ class BaseMapPageState extends State<BaseMapPage> {
     });
   }
 
-  void getPolyPoints() async {
+  void loadRoute(sourceLocation, destinationLocation) async {
     PolylinePoints polylinePoints = PolylinePoints();
 
     await polylinePoints
         .getRouteBetweenCoordinates(
       EnvironmentConfig.googleApiKey!,
-      PointLatLng(sourceLocation.latitude, sourceLocation.longitude),
-      PointLatLng(destination.latitude, destination.longitude),
+      PointLatLng(sourceLocation!.latitude!, sourceLocation!.longitude!),
+      PointLatLng(
+          destinationLocation!.latitude!, destinationLocation!.longitude!),
     )
         .then((response) {
       if (response.points.isNotEmpty) {
         for (var point in response.points) {
-          polylineCoordinates.add(
+          routePolylineCoordinates.add(
             LatLng(point.latitude, point.longitude),
           );
         }
+        loadRouteMarkers(sourceLocation, destinationLocation);
         setState(() {});
       }
+      // TODO: adicionar a exceção de não haver uma rota!
     });
   }
 
-  void generateMarkers() async {
-    markers.clear();
+  loadRouteMarkers(sourceLocation, destinationLocation) {
+    Marker sourceRouteMarker = Marker(
+      markerId: const MarkerId("sourceRoute"),
+      icon: sourceIcon,
+      position: sourceRouteLocation,
+    );
+
+    Marker destinationRouteMarker = Marker(
+      markerId: const MarkerId("destinationRoute"),
+      icon: destinationIcon,
+      position: destinationRouteLocation,
+    );
+
+    markers["sourceRouteMarker"] = sourceRouteMarker;
+    markers['destinationRouteMarker'] = destinationRouteMarker;
+    setState(() {});
+  }
+
+  void loadCurrentLocationMark(newLoc) async {
+    Marker newMarker = Marker(
+        markerId: const MarkerId("currentLocation"),
+        icon: currentLocationIcon,
+        position:
+            LatLng(currentLocation!.latitude!, currentLocation!.longitude!));
+    markers['currentLocation'] = newMarker;
+    setState(() {});
+  }
+
+  void loadPotHoles() {
     databaseReference.child('potholes').once().then((DatabaseEvent event) {
       List<dynamic>? potholesList = event.snapshot.value as List<dynamic>?;
       for (final pothole in potholesList!) {
@@ -99,41 +128,10 @@ class BaseMapPageState extends State<BaseMapPage> {
         markers[pothole['id']] = marker;
       }
     });
-
-    baseLocations['currentLocation'] = Marker(
-        markerId: const MarkerId("currentLocation"),
-        icon: currentLocationIcon,
-        position:
-            LatLng(currentLocation!.latitude!, currentLocation!.longitude!));
-
-    baseLocations['source'] = Marker(
-      markerId: const MarkerId("source"),
-      icon: sourceIcon,
-      position: sourceLocation,
-    );
-
-    baseLocations['destination'] = Marker(
-      markerId: const MarkerId("destination"),
-      icon: destinationIcon,
-      position: destination,
-    );
-
-    markers.addAll(baseLocations);
-    setState(() {});
-  }
-
-  void updateMarkCurrentLocation(newLoc) async {
-    Marker newMarker = Marker(
-        markerId: const MarkerId("currentLocation"),
-        icon: currentLocationIcon,
-        position:
-            LatLng(currentLocation!.latitude!, currentLocation!.longitude!));
-    markers['currentLocation'] = newMarker;
-    setState(() {});
   }
 
   // TODO automatizar ajuste de tamanho de ícones com base no tamanho de tela ou componentes do google maps, em vez de fazer ajuste em hardcode, gerar assets com tamanhos corretos para teste.
-  void setCustomMakerIcon() {
+  void setCustomMakerIcons() {
     ImageSizeAdjust.getCustomIcon('assets/images/mark_location_blue.png', 80)
         .then((icon) {
       sourceIcon = icon;
@@ -158,9 +156,10 @@ class BaseMapPageState extends State<BaseMapPage> {
 
   @override
   void initState() {
-    getCurrentLocation();
-    setCustomMakerIcon();
-    getPolyPoints();
+    setCustomMakerIcons();
+    loadCurrentLocation();
+    loadRoute(sourceRouteLocation, destinationRouteLocation);
+    loadPotHoles();
     super.initState();
   }
 
@@ -169,12 +168,12 @@ class BaseMapPageState extends State<BaseMapPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "Track order",
+          "SpotHoles Android",
           style: TextStyle(color: Colors.black, fontSize: 16),
         ),
       ),
       body: currentLocation == null
-          ? const Center(child: Text("Loading"))
+          ? const Center(child: Text("Loading..."))
           : GoogleMap(
               initialCameraPosition: CameraPosition(
                 target: LatLng(
@@ -184,7 +183,7 @@ class BaseMapPageState extends State<BaseMapPage> {
               polylines: {
                 Polyline(
                   polylineId: const PolylineId("route"),
-                  points: polylineCoordinates,
+                  points: routePolylineCoordinates,
                   color: primaryColor,
                   width: 6,
                 ),
