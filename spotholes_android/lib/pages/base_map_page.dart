@@ -6,8 +6,10 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:spotholes_android/config/environment_config.dart';
+import 'package:spotholes_android/widgets/main_draggable_sheet.dart';
 import 'package:spotholes_android/utilities/constants.dart';
 import 'package:spotholes_android/utilities/image_size_adjust.dart';
+import 'package:spotholes_android/widgets/location_marker_modal.dart';
 
 class BaseMapPage extends StatefulWidget {
   const BaseMapPage({super.key});
@@ -17,11 +19,13 @@ class BaseMapPage extends StatefulWidget {
 
 class BaseMapPageState extends State<BaseMapPage> {
   final Completer<GoogleMapController> _controller = Completer();
+  GoogleMapController? googleMapController;
   final DatabaseReference databaseReference = FirebaseDatabase.instance.ref();
 
   final Map<String, Marker> markers = {};
   final Map<String, Marker> baseLocations = {};
 
+  Location location = Location();
   LocationData? currentLocation;
 
   List<LatLng> routePolylineCoordinates = [];
@@ -39,22 +43,35 @@ class BaseMapPageState extends State<BaseMapPage> {
   var indexRoute = 0;
 
   void loadCurrentLocation() async {
-    Location location = Location();
-
     currentLocation = await location.getLocation();
     loadCurrentLocationMark(currentLocation);
-
-    // TODO Verificar o que a linha seguinte faz
-    GoogleMapController googleMapController = await _controller.future;
 
     location.onLocationChanged.listen((newLoc) {
       currentLocation = newLoc;
       loadCurrentLocationMark(newLoc);
-      googleMapController.animateCamera(CameraUpdate.newCameraPosition(
-          CameraPosition(
-              zoom: 18.5,
-              target: LatLng(newLoc.latitude!, newLoc.longitude!))));
     });
+
+    // TODO Verificar o que a linha seguinte faz
+    googleMapController = await _controller.future;
+
+    googleMapController!.animateCamera(CameraUpdate.newCameraPosition(
+        CameraPosition(
+            zoom: 18.5,
+            target: LatLng(
+                currentLocation!.latitude!, currentLocation!.longitude!))));
+  }
+
+  void _centerView() async {
+    googleMapController!.animateCamera(CameraUpdate.newCameraPosition(
+      CameraPosition(
+        target: LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
+        zoom: 18.5,
+      ),
+    ));
+  }
+
+  void _onMapCreated(mapController) {
+    _controller.complete(mapController);
   }
 
   void loadRoute(sourceLocation, destinationLocation) async {
@@ -109,10 +126,10 @@ class BaseMapPageState extends State<BaseMapPage> {
     setState(() {});
   }
 
-  void loadPotHoles() {
+  void loadSpotholes() {
     databaseReference.child('potholes').once().then((DatabaseEvent event) {
-      List<dynamic>? potholesList = event.snapshot.value as List<dynamic>?;
-      for (final pothole in potholesList!) {
+      List<dynamic>? spotholesList = event.snapshot.value as List<dynamic>?;
+      for (final pothole in spotholesList!) {
         final marker = Marker(
           markerId: MarkerId(pothole['id']),
           icon: potholeIcon,
@@ -132,26 +149,43 @@ class BaseMapPageState extends State<BaseMapPage> {
 
   // TODO automatizar ajuste de tamanho de ícones com base no tamanho de tela ou componentes do google maps, em vez de fazer ajuste em hardcode, gerar assets com tamanhos corretos para teste.
   void setCustomMakerIcons() {
-    ImageSizeAdjust.getCustomIcon('assets/images/mark_location_blue.png', 80)
+    ImageSizeAdjust.getCustomIcon('assets/images/source_route.png', 110)
         .then((icon) {
       sourceIcon = icon;
     });
-
     ImageSizeAdjust.getCustomIcon(
-            'assets/images/pin_destination_contrast_shadow_blue.png', 90)
+            'assets/images/end_route.png',
+            110)
         .then((icon) {
       destinationIcon = icon;
     });
-
     ImageSizeAdjust.getCustomIcon("assets/images/badge_red.png", 150)
         .then((icon) {
       currentLocationIcon = icon;
     });
-
-    ImageSizeAdjust.getCustomIcon('assets/images/pothole_sign.png', 80)
+    ImageSizeAdjust.getCustomIcon('assets/images/pothole_sign.png', 100)
         .then((icon) {
       potholeIcon = icon;
     });
+  }
+
+  void _onLongPress(LatLng position) {
+    markers['longPressed'] = Marker(
+      markerId: MarkerId(position.toString()),
+      position: position,
+    );
+    googleMapController!.animateCamera(CameraUpdate.newCameraPosition(
+        CameraPosition(zoom: 18.5, target: position)));
+    // databaseReference.child('location').set({
+    //   'latitude': position.latitude,
+    //   'longitude': position.longitude,
+    // });
+    showModalBottomSheet(
+        context: context,
+        builder: (builder) {
+          return LocationMarkerModal(latLng: position);
+        });
+    setState(() {});
   }
 
   @override
@@ -159,7 +193,7 @@ class BaseMapPageState extends State<BaseMapPage> {
     setCustomMakerIcons();
     loadCurrentLocation();
     loadRoute(sourceRouteLocation, destinationRouteLocation);
-    loadPotHoles();
+    loadSpotholes();
     super.initState();
   }
 
@@ -174,24 +208,55 @@ class BaseMapPageState extends State<BaseMapPage> {
       ),
       body: currentLocation == null
           ? const Center(child: Text("Loading..."))
-          : GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: LatLng(
-                    currentLocation!.latitude!, currentLocation!.longitude!),
-                zoom: 18.5,
-              ),
-              polylines: {
-                Polyline(
-                  polylineId: const PolylineId("route"),
-                  points: routePolylineCoordinates,
-                  color: primaryColor,
-                  width: 6,
+          : Stack(
+              children: [
+                GoogleMap(
+                  onMapCreated: _onMapCreated,
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(currentLocation!.latitude!,
+                        currentLocation!.longitude!),
+                    zoom: 18.5,
+                  ),
+                  polylines: {
+                    Polyline(
+                      polylineId: const PolylineId("route"),
+                      points: routePolylineCoordinates,
+                      color: primaryColor,
+                      width: 6,
+                    ),
+                  },
+                  markers: markers.values.toSet(),
+                  onLongPress: _onLongPress,
+                  zoomControlsEnabled: false,
                 ),
-              },
-              markers: markers.values.toSet(),
-              onMapCreated: (mapController) {
-                _controller.complete(mapController);
-              }),
+                Positioned(
+                  bottom: 150,
+                  right: 10,
+                  left: 0,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        FloatingActionButton(
+                          onPressed: () {},
+                          heroTag: null,
+                          child:
+                              Image.asset('assets/images/pothole_add_icon.png'),
+                        ),
+                        const SizedBox(height: 10),
+                        FloatingActionButton(
+                          onPressed: _centerView,
+                          heroTag: null,
+                          child: const Icon(Icons.location_searching),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const MainDraggableSheet(),
+              ],
+            ),
     );
   }
 }
