@@ -3,13 +3,16 @@ import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:get_it/get_it.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:spotholes_android/config/environment_config.dart';
-import 'package:spotholes_android/widgets/main_draggable_sheet.dart';
+import 'package:spotholes_android/mixins/register_spothole_mixin.dart';
+import 'package:spotholes_android/models/spothole.dart';
 import 'package:spotholes_android/utilities/constants.dart';
 import 'package:spotholes_android/utilities/image_size_adjust.dart';
 import 'package:spotholes_android/widgets/location_marker_modal.dart';
+import 'package:spotholes_android/widgets/main_draggable_sheet.dart';
 
 class BaseMapPage extends StatefulWidget {
   const BaseMapPage({super.key});
@@ -17,10 +20,10 @@ class BaseMapPage extends StatefulWidget {
   State<BaseMapPage> createState() => BaseMapPageState();
 }
 
-class BaseMapPageState extends State<BaseMapPage> {
+class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
   final Completer<GoogleMapController> _controller = Completer();
   GoogleMapController? googleMapController;
-  final DatabaseReference databaseReference = FirebaseDatabase.instance.ref();
+  final DatabaseReference databaseReference = GetIt.I<DatabaseReference>();
 
   final Map<String, Marker> markers = {};
   final Map<String, Marker> baseLocations = {};
@@ -127,23 +130,25 @@ class BaseMapPageState extends State<BaseMapPage> {
   }
 
   void loadSpotholes() {
-    databaseReference.child('potholes').once().then((DatabaseEvent event) {
-      List<dynamic>? spotholesList = event.snapshot.value as List<dynamic>?;
-      for (final pothole in spotholesList!) {
+    databaseReference.child('spotholes').once().then((DatabaseEvent event) {
+      final spotholesMap = event.snapshot.value as Map;
+      spotholesMap.forEach((key, value) {
+        final spothole =
+            Spothole.fromJson(Map<String, dynamic>.from(value as Map));
         final marker = Marker(
-          markerId: MarkerId(pothole['id']),
+          markerId: MarkerId(key),
           icon: potholeIcon,
-          position: LatLng(
-            pothole['position']['lat'] as double,
-            pothole['position']['long'] as double,
-          ),
+          position: spothole.position,
           infoWindow: InfoWindow(
-            title: pothole['label'],
-            snippet: pothole['location']['road'],
+            title: 'Categoria: ${spothole.category.text}',
+            snippet: '''
+                Risco: ${spothole.type.text}
+                \nData de registro${spothole.dateOfRegister}
+                \nÚtimma Atualização:${spothole.dateOfUpdate}''',
           ),
         );
-        markers[pothole['id']] = marker;
-      }
+        markers[key] = marker;
+      });
     });
   }
 
@@ -153,9 +158,7 @@ class BaseMapPageState extends State<BaseMapPage> {
         .then((icon) {
       sourceIcon = icon;
     });
-    ImageSizeAdjust.getCustomIcon(
-            'assets/images/end_route.png',
-            110)
+    ImageSizeAdjust.getCustomIcon('assets/images/end_route.png', 110)
         .then((icon) {
       destinationIcon = icon;
     });
@@ -176,15 +179,16 @@ class BaseMapPageState extends State<BaseMapPage> {
     );
     googleMapController!.animateCamera(CameraUpdate.newCameraPosition(
         CameraPosition(zoom: 18.5, target: position)));
-    // databaseReference.child('location').set({
-    //   'latitude': position.latitude,
-    //   'longitude': position.longitude,
-    // });
     showModalBottomSheet(
         context: context,
         builder: (builder) {
           return LocationMarkerModal(latLng: position);
         });
+    setState(() {});
+  }
+
+  Future<void> _registerPothole() async {
+    registerSpotholeModal(context, currentLocation);
     setState(() {});
   }
 
@@ -207,7 +211,7 @@ class BaseMapPageState extends State<BaseMapPage> {
         ),
       ),
       body: currentLocation == null
-          ? const Center(child: Text("Loading..."))
+          ? const Center(child: Text("Carregando..."))
           : Stack(
               children: [
                 GoogleMap(
@@ -239,7 +243,7 @@ class BaseMapPageState extends State<BaseMapPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: <Widget>[
                         FloatingActionButton(
-                          onPressed: () {},
+                          onPressed: _registerPothole,
                           heroTag: null,
                           child:
                               Image.asset('assets/images/pothole_add_icon.png'),

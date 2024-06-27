@@ -45,6 +45,7 @@ dependencies:
   json_annotation: ^4.9.0
   flutter_native_splash: ^2.4.0
   flutter_launcher_icons: ^0.13.1
+  get_it: ^7.7.0
 
 dev_dependencies:
   flutter_test:
@@ -96,6 +97,7 @@ flutter:
   assets:
     - .env
     - assets/images/
+    - assets/images/risks/
     - assets/logo/
 
   # An image asset can refer to one or more resolution-specific "variants", see

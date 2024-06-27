@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:spotholes_android/mixins/register_spothole_mixin.dart';
 
-class LocationMarkerModal extends StatelessWidget {
+class LocationMarkerModal extends StatelessWidget with RegisterSpothole {
   final LatLng latLng;
 
   const LocationMarkerModal({super.key, required this.latLng});
+
+
+  _registerSpotholeModal(BuildContext context){
+    Navigator.pop(context);
+    registerSpotholeModal(context, latLng);
+  }
 
   Container customButton(
       {required String label, color, required VoidCallback onPressed}) {
@@ -40,6 +47,24 @@ class LocationMarkerModal extends StatelessWidget {
             ),
           ),
         ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'Alfinete inserido',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),        
         ListTile(
           leading: const Icon(Icons.place),
           title: const Text('Localização selecionada'),
@@ -59,8 +84,8 @@ class LocationMarkerModal extends StatelessWidget {
               // Adicione seus botões aqui
               customButton(
                   label: 'Rotas', color: Colors.green, onPressed: () {}),
+              customButton(label: 'Alertar', onPressed: () { _registerSpotholeModal(context); }),
               customButton(label: 'Salvar', onPressed: () {}),
-              customButton(label: 'Cancelar', onPressed: () {}),
               customButton(label: 'Excluir', onPressed: () {}),
             ],
           ),

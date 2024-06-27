@@ -18,6 +18,12 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
   }
 
   @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       minChildSize: 0.15,
@@ -83,11 +89,5 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
         );
       },
     );
-  }
-
-  @override
-  void dispose() {
-    scrollController.dispose();
-    super.dispose();
   }
 }
