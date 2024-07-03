@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:spotholes_android/mixins/register_spothole_mixin.dart';
+import 'package:spotholes_android/mixins/spothole_mixin.dart';
 import 'package:spotholes_android/widgets/auto_press_button.dart';
 import 'package:spotholes_android/models/spothole.dart';
 

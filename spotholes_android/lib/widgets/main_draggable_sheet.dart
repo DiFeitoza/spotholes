@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:location/location.dart';
 import 'package:signals/signals_flutter.dart';
-import 'package:spotholes_android/mixins/register_spothole_mixin.dart';
+import 'package:spotholes_android/mixins/spothole_mixin.dart';
 import 'package:spotholes_android/services/service_locator.dart';
 import 'package:spotholes_android/widgets/custom_button.dart';
 

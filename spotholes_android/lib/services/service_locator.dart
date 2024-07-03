@@ -1,5 +1,6 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:get_it/get_it.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:signals/signals.dart';
 
@@ -13,4 +14,7 @@ void setupDependencies() {
 
   // Setup Locator
   getIt.registerSingleton<Signal<LocationData?>>(Signal<LocationData?>(null));
+
+  // Setup Map Assets
+  getIt.registerSingleton<Signal<Map<String, Marker>>>(Signal<Map<String, Marker>>({}));
 }

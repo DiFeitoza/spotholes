@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:spotholes_android/mixins/register_spothole_mixin.dart';
+import 'package:spotholes_android/mixins/spothole_mixin.dart';
 
 class LocationMarkerModal extends StatelessWidget with RegisterSpothole {
-  final LatLng latLng;
+  final LatLng position;
 
-  const LocationMarkerModal({super.key, required this.latLng});
+  LocationMarkerModal({super.key, required this.position});
 
   _registerSpotholeModal(BuildContext context) {
     Navigator.pop(context);
-    registerSpotholeModal(context, latLng);
+    registerSpotholeModal(context, position);
   }
 
   Container customButton(
@@ -68,7 +68,7 @@ class LocationMarkerModal extends StatelessWidget with RegisterSpothole {
           leading: const Icon(Icons.place),
           title: const Text('Localização selecionada'),
           subtitle: Text(
-              'Latitude: ${latLng.latitude}, Longitude: ${latLng.longitude}'),
+              'Latitude: ${position.latitude}, Longitude: ${position.longitude}'),
         ),
         const ListTile(
           leading: Icon(Icons.info),

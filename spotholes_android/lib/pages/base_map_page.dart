@@ -1,20 +1,18 @@
 import 'dart:async';
 
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
-import 'package:get_it/get_it.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:signals/signals_flutter.dart';
 import 'package:spotholes_android/config/environment_config.dart';
-import 'package:spotholes_android/mixins/register_spothole_mixin.dart';
-import 'package:spotholes_android/models/spothole.dart';
+import 'package:spotholes_android/mixins/spothole_mixin.dart';
 import 'package:spotholes_android/services/service_locator.dart';
 import 'package:spotholes_android/utilities/constants.dart';
-import 'package:spotholes_android/utilities/image_size_adjust.dart';
 import 'package:spotholes_android/widgets/location_marker_modal.dart';
 import 'package:spotholes_android/widgets/main_draggable_sheet.dart';
+
+import '../utilities/custom_icons.dart';
 
 class BaseMapPage extends StatefulWidget {
   const BaseMapPage({super.key});
@@ -25,9 +23,6 @@ class BaseMapPage extends StatefulWidget {
 class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
   final Completer<GoogleMapController> _controller = Completer();
   GoogleMapController? googleMapController;
-  final DatabaseReference databaseReference = GetIt.I<DatabaseReference>();
-
-  final Map<String, Marker> markers = {};
   final Map<String, Marker> baseLocations = {};
 
   Location location = Location();
@@ -41,23 +36,18 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
   static const LatLng destinationRouteLocation =
       LatLng(-4.971373575301382, -39.018458585833024);
 
-  BitmapDescriptor sourceIcon = BitmapDescriptor.defaultMarker;
-  BitmapDescriptor destinationIcon = BitmapDescriptor.defaultMarker;
-  BitmapDescriptor currentLocationIcon = BitmapDescriptor.defaultMarker;
-  BitmapDescriptor potholeIcon = BitmapDescriptor.defaultMarker;
-
   var indexRoute = 0;
 
-  void loadCurrentLocation() async {
+  void _loadCurrentLocation() async {
     currentLocationSignal.value = await location.getLocation();
-    loadCurrentLocationMark(currentLocationSignal.value);
+    _loadCurrentLocationMark(currentLocationSignal.value);
 
     location.onLocationChanged.listen((newLoc) {
       currentLocationSignal.value = newLoc;
-      loadCurrentLocationMark(newLoc);
+      _loadCurrentLocationMark(newLoc);
     });
 
-    // TODO Verificar o que a linha seguinte faz
+    // TODO entender e melhorar esse trecho de código
     googleMapController = await _controller.future;
 
     googleMapController!.animateCamera(
@@ -87,7 +77,7 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
     _controller.complete(mapController);
   }
 
-  void loadRoute(sourceLocation, destinationLocation) async {
+  void _loadRoute(sourceLocation, destinationLocation) async {
     PolylinePoints polylinePoints = PolylinePoints();
 
     await polylinePoints
@@ -104,86 +94,44 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
             LatLng(point.latitude, point.longitude),
           );
         }
-        loadRouteMarkers(sourceLocation, destinationLocation);
+        _loadRouteMarkers(sourceLocation, destinationLocation);
         setState(() {});
       }
       // TODO: adicionar a exceção de não haver uma rota!
     });
   }
 
-  loadRouteMarkers(sourceLocation, destinationLocation) {
+  void _loadRouteMarkers(sourceLocation, destinationLocation) {
     Marker sourceRouteMarker = Marker(
       markerId: const MarkerId("sourceRoute"),
-      icon: sourceIcon,
+      icon: CustomIcons.sourceIcon,
       position: sourceRouteLocation,
     );
 
     Marker destinationRouteMarker = Marker(
       markerId: const MarkerId("destinationRoute"),
-      icon: destinationIcon,
+      icon: CustomIcons.destinationIcon,
       position: destinationRouteLocation,
     );
 
-    markers["sourceRouteMarker"] = sourceRouteMarker;
-    markers['destinationRouteMarker'] = destinationRouteMarker;
+    markersSignal.value["sourceRouteMarker"] = sourceRouteMarker;
+    markersSignal.value['destinationRouteMarker'] = destinationRouteMarker;
     setState(() {});
   }
 
-  void loadCurrentLocationMark(newLoc) async {
+  void _loadCurrentLocationMark(newLoc) async {
     Marker newMarker = Marker(
-        markerId: const MarkerId("currentLocation"),
-        icon: currentLocationIcon,
-        position: LatLng(currentLocationSignal.value!.latitude!,
-            currentLocationSignal.value!.longitude!));
-    markers['currentLocation'] = newMarker;
+      markerId: const MarkerId("currentLocation"),
+      icon: CustomIcons.currentLocationIcon,
+      position: LatLng(currentLocationSignal.value!.latitude!,
+          currentLocationSignal.value!.longitude!),
+    );
+    markersSignal.value['currentLocationMarker'] = newMarker;
     setState(() {});
-  }
-
-  void loadSpotholes() {
-    databaseReference.child('spotholes').once().then((DatabaseEvent event) {
-      final spotholesMap = event.snapshot.value as Map;
-      spotholesMap.forEach((key, value) {
-        final spothole =
-            Spothole.fromJson(Map<String, dynamic>.from(value as Map));
-        final marker = Marker(
-          markerId: MarkerId(key),
-          icon: potholeIcon,
-          position: spothole.position,
-          infoWindow: InfoWindow(
-            title: 'Categoria: ${spothole.category.text}',
-            snippet: '''
-                Risco: ${spothole.type.text}
-                \nData de registro${spothole.dateOfRegister}
-                \nÚtimma Atualização:${spothole.dateOfUpdate}''',
-          ),
-        );
-        markers[key] = marker;
-      });
-    });
-  }
-
-  // TODO automatizar ajuste de tamanho de ícones com base no tamanho de tela ou componentes do google maps, em vez de fazer ajuste em hardcode, gerar assets com tamanhos corretos para teste.
-  void setCustomMakerIcons() {
-    ImageSizeAdjust.getCustomIcon('assets/images/source_route.png', 110)
-        .then((icon) {
-      sourceIcon = icon;
-    });
-    ImageSizeAdjust.getCustomIcon('assets/images/end_route.png', 110)
-        .then((icon) {
-      destinationIcon = icon;
-    });
-    ImageSizeAdjust.getCustomIcon("assets/images/badge_red.png", 150)
-        .then((icon) {
-      currentLocationIcon = icon;
-    });
-    ImageSizeAdjust.getCustomIcon('assets/images/pothole_sign.png', 100)
-        .then((icon) {
-      potholeIcon = icon;
-    });
   }
 
   void _onLongPress(LatLng position) {
-    markers['longPressed'] = Marker(
+    markersSignal.value['longPressed'] = Marker(
       markerId: MarkerId(position.toString()),
       position: position,
     );
@@ -192,7 +140,7 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
     showModalBottomSheet(
         context: context,
         builder: (builder) {
-          return LocationMarkerModal(latLng: position);
+          return LocationMarkerModal(position: position);
         });
     setState(() {});
   }
@@ -204,10 +152,9 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
 
   @override
   void initState() {
-    setCustomMakerIcons();
-    loadCurrentLocation();
-    loadRoute(sourceRouteLocation, destinationRouteLocation);
-    loadSpotholes();
+    _loadCurrentLocation();
+    _loadRoute(sourceRouteLocation, destinationRouteLocation);
+    loadSpotholeMarkers();
     super.initState();
   }
 
@@ -239,7 +186,7 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
                       width: 6,
                     ),
                   },
-                  markers: markers.values.toSet(),
+                  markers: markersSignal.value.values.toSet(),
                   onLongPress: _onLongPress,
                   zoomControlsEnabled: false,
                 ),
@@ -257,6 +204,14 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
                           heroTag: null,
                           child:
                               Image.asset('assets/images/pothole_add_icon.png'),
+                        ),
+                        const SizedBox(height: 10),
+                        FloatingActionButton(
+                          onPressed: () {
+                            loadSpotholeMarkers();
+                          },
+                          heroTag: null,
+                          child: const Icon(Icons.sync),
                         ),
                         const SizedBox(height: 10),
                         FloatingActionButton(

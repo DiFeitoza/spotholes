@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:spotholes_android/mixins/register_spothole_mixin.dart';
+import 'package:spotholes_android/mixins/spothole_mixin.dart';
 import 'package:spotholes_android/models/spothole.dart';
 
 class AutoPressButton extends StatefulWidget {
@@ -39,7 +39,7 @@ class AutoPressButtonState extends State<AutoPressButton>
     _animationController =
         AnimationController(vsync: this, duration: const Duration(seconds: 10));
 
-    // TODO diferente da implementação do site, lá usa end como 1 e não adiciona o listener
+    // TODO aproveitei a lógica de um site, lá usa end como 1 e não adiciona o listener
     _animation = Tween(begin: 35.0, end: 100.0).animate(_animationController)
       ..addListener(() {
         setState(() {});
@@ -56,7 +56,7 @@ class AutoPressButtonState extends State<AutoPressButton>
     super.initState();
   }
 
-  // TODO Erro na aplicação de adiciono esse trecho
+  // TODO Tive que adicionar o dispose, porque estava dando erro na aplicação
   @override
   void dispose() {
     _animationController.dispose();
