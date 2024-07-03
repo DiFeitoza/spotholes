@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:location/location.dart';
+import 'package:signals/signals_flutter.dart';
+import 'package:spotholes_android/mixins/register_spothole_mixin.dart';
+import 'package:spotholes_android/services/service_locator.dart';
 import 'package:spotholes_android/widgets/custom_button.dart';
 
 class MainDraggableSheet extends StatefulWidget {
@@ -8,7 +12,8 @@ class MainDraggableSheet extends StatefulWidget {
   MainDraggableSheetState createState() => MainDraggableSheetState();
 }
 
-class MainDraggableSheetState extends State<MainDraggableSheet> {
+class MainDraggableSheetState extends State<MainDraggableSheet>
+    with RegisterSpothole {
   late ScrollController scrollController;
 
   @override
@@ -21,6 +26,10 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
   void dispose() {
     scrollController.dispose();
     super.dispose();
+  }
+
+  _registerSpotholeModal(BuildContext context) {
+    registerSpotholeModal(context, getIt<Signal<LocationData?>>().value);
   }
 
   @override
@@ -74,8 +83,12 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
                                 label: 'Rotas',
                                 color: Colors.green,
                                 onPressed: () {}),
+                            CustomButton(
+                                label: 'Alertar',
+                                onPressed: () {
+                                  _registerSpotholeModal(context);
+                                }),
                             CustomButton(label: 'Salvar', onPressed: () {}),
-                            CustomButton(label: 'Cancelar', onPressed: () {}),
                             CustomButton(label: 'Excluir', onPressed: () {}),
                           ],
                         ),

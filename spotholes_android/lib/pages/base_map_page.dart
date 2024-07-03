@@ -6,9 +6,11 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:signals/signals_flutter.dart';
 import 'package:spotholes_android/config/environment_config.dart';
 import 'package:spotholes_android/mixins/register_spothole_mixin.dart';
 import 'package:spotholes_android/models/spothole.dart';
+import 'package:spotholes_android/services/service_locator.dart';
 import 'package:spotholes_android/utilities/constants.dart';
 import 'package:spotholes_android/utilities/image_size_adjust.dart';
 import 'package:spotholes_android/widgets/location_marker_modal.dart';
@@ -29,7 +31,8 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
   final Map<String, Marker> baseLocations = {};
 
   Location location = Location();
-  LocationData? currentLocation;
+  final Signal<LocationData?> currentLocationSignal =
+      getIt<Signal<LocationData?>>();
 
   List<LatLng> routePolylineCoordinates = [];
 
@@ -46,31 +49,38 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
   var indexRoute = 0;
 
   void loadCurrentLocation() async {
-    currentLocation = await location.getLocation();
-    loadCurrentLocationMark(currentLocation);
+    currentLocationSignal.value = await location.getLocation();
+    loadCurrentLocationMark(currentLocationSignal.value);
 
     location.onLocationChanged.listen((newLoc) {
-      currentLocation = newLoc;
+      currentLocationSignal.value = newLoc;
       loadCurrentLocationMark(newLoc);
     });
 
     // TODO Verificar o que a linha seguinte faz
     googleMapController = await _controller.future;
 
-    googleMapController!.animateCamera(CameraUpdate.newCameraPosition(
+    googleMapController!.animateCamera(
+      CameraUpdate.newCameraPosition(
         CameraPosition(
-            zoom: 18.5,
-            target: LatLng(
-                currentLocation!.latitude!, currentLocation!.longitude!))));
+          zoom: 18.5,
+          target: LatLng(currentLocationSignal.value!.latitude!,
+              currentLocationSignal.value!.longitude!),
+        ),
+      ),
+    );
   }
 
   void _centerView() async {
-    googleMapController!.animateCamera(CameraUpdate.newCameraPosition(
-      CameraPosition(
-        target: LatLng(currentLocation!.latitude!, currentLocation!.longitude!),
-        zoom: 18.5,
+    googleMapController!.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(currentLocationSignal.value!.latitude!,
+              currentLocationSignal.value!.longitude!),
+          zoom: 18.5,
+        ),
       ),
-    ));
+    );
   }
 
   void _onMapCreated(mapController) {
@@ -123,8 +133,8 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
     Marker newMarker = Marker(
         markerId: const MarkerId("currentLocation"),
         icon: currentLocationIcon,
-        position:
-            LatLng(currentLocation!.latitude!, currentLocation!.longitude!));
+        position: LatLng(currentLocationSignal.value!.latitude!,
+            currentLocationSignal.value!.longitude!));
     markers['currentLocation'] = newMarker;
     setState(() {});
   }
@@ -188,7 +198,7 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
   }
 
   Future<void> _registerPothole() async {
-    registerSpotholeModal(context, currentLocation);
+    registerSpotholeModal(context, currentLocationSignal.value);
     setState(() {});
   }
 
@@ -210,15 +220,15 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
           style: TextStyle(color: Colors.black, fontSize: 16),
         ),
       ),
-      body: currentLocation == null
+      body: currentLocationSignal.value == null
           ? const Center(child: Text("Carregando..."))
           : Stack(
               children: [
                 GoogleMap(
                   onMapCreated: _onMapCreated,
                   initialCameraPosition: CameraPosition(
-                    target: LatLng(currentLocation!.latitude!,
-                        currentLocation!.longitude!),
+                    target: LatLng(currentLocationSignal.value!.latitude!,
+                        currentLocationSignal.value!.longitude!),
                     zoom: 18.5,
                   ),
                   polylines: {

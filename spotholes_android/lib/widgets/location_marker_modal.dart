@@ -7,8 +7,7 @@ class LocationMarkerModal extends StatelessWidget with RegisterSpothole {
 
   const LocationMarkerModal({super.key, required this.latLng});
 
-
-  _registerSpotholeModal(BuildContext context){
+  _registerSpotholeModal(BuildContext context) {
     Navigator.pop(context);
     registerSpotholeModal(context, latLng);
   }
@@ -64,7 +63,7 @@ class LocationMarkerModal extends StatelessWidget with RegisterSpothole {
               },
             ),
           ],
-        ),        
+        ),
         ListTile(
           leading: const Icon(Icons.place),
           title: const Text('Localização selecionada'),
@@ -84,7 +83,11 @@ class LocationMarkerModal extends StatelessWidget with RegisterSpothole {
               // Adicione seus botões aqui
               customButton(
                   label: 'Rotas', color: Colors.green, onPressed: () {}),
-              customButton(label: 'Alertar', onPressed: () { _registerSpotholeModal(context); }),
+              customButton(
+                  label: 'Alertar',
+                  onPressed: () {
+                    _registerSpotholeModal(context);
+                  }),
               customButton(label: 'Salvar', onPressed: () {}),
               customButton(label: 'Excluir', onPressed: () {}),
             ],
