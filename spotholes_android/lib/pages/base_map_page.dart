@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:custom_info_window/custom_info_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -7,6 +8,7 @@ import 'package:location/location.dart';
 import 'package:signals/signals_flutter.dart';
 import 'package:spotholes_android/config/environment_config.dart';
 import 'package:spotholes_android/mixins/spothole_mixin.dart';
+// import 'package:spotholes_android/package/custom_info_windows.dart';
 import 'package:spotholes_android/services/service_locator.dart';
 import 'package:spotholes_android/utilities/constants.dart';
 import 'package:spotholes_android/widgets/location_marker_modal.dart';
@@ -75,6 +77,7 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
 
   void _onMapCreated(mapController) {
     _controller.complete(mapController);
+    customInfoWindowController.googleMapController = mapController;
   }
 
   void _loadRoute(sourceLocation, destinationLocation) async {
@@ -189,6 +192,18 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
                   markers: markersSignal.value.values.toSet(),
                   onLongPress: _onLongPress,
                   zoomControlsEnabled: false,
+                  onTap: (position) {
+                    customInfoWindowController.hideInfoWindow!();
+                  },
+                  onCameraMove: (position) {
+                    customInfoWindowController.onCameraMove!();
+                  },
+                ),
+                CustomInfoWindow(
+                  controller: customInfoWindowController,
+                  height: 160,
+                  width: 200,
+                  offset: 40,
                 ),
                 Positioned(
                   bottom: 150,
@@ -202,8 +217,7 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
                         FloatingActionButton(
                           onPressed: _registerPothole,
                           heroTag: null,
-                          child:
-                              Image.asset('assets/images/pothole_add_icon.png'),
+                          child: CustomIcons.potholeAddIcon,
                         ),
                         const SizedBox(height: 10),
                         FloatingActionButton(

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:spotholes_android/utilities/image_size_adjust.dart';
 
@@ -5,7 +6,29 @@ class CustomIcons {
   static BitmapDescriptor sourceIcon = BitmapDescriptor.defaultMarker;
   static BitmapDescriptor destinationIcon = BitmapDescriptor.defaultMarker;
   static BitmapDescriptor currentLocationIcon = BitmapDescriptor.defaultMarker;
-  static BitmapDescriptor potholeIcon = BitmapDescriptor.defaultMarker;
+  static BitmapDescriptor potholeSignIcon = BitmapDescriptor.defaultMarker;
+
+  static Image riskTypePothole = Image.asset(
+      'assets/images/risks/buraco_na_pista.png',
+      width: 70,
+      height: 70);
+  static Image riskTypeDeepHole = Image.asset(
+      'assets/images/risks/buraco_acentuado_na_pista.png',
+      width: 70,
+      height: 70);
+  static Image riskTypeJagged = Image.asset(
+      'assets/images/risks/pista_irregular.png',
+      width: 70,
+      height: 70);
+  static Image riskCategoryUnitary = Image.asset(
+      'assets/images/risks/categoria_buraco.png',
+      width: 70,
+      height: 70);
+  static Image riskCategoryStrech = Image.asset(
+      'assets/images/risks/categoria_trecho_esburacado.png',
+      width: 70,
+      height: 70);
+  static Image potholeAddIcon = Image.asset('assets/images/pothole_add_icon.png');
 
   // TODO automatizar ajuste de tamanho de ícones com base no tamanho de tela ou componentes do google maps, em vez de fazer ajuste em hardcode gerar assets com tamanhos corretos para teste.
   static setupCustomIcons() {
@@ -23,7 +46,7 @@ class CustomIcons {
     });
     ImageSizeAdjust.getCustomIcon('assets/images/pothole_sign.png', 100)
         .then((icon) {
-      potholeIcon = icon;
+      potholeSignIcon = icon;
     });
   }
 }

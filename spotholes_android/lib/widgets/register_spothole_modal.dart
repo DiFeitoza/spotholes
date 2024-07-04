@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:spotholes_android/mixins/spothole_mixin.dart';
-import 'package:spotholes_android/widgets/auto_press_button.dart';
 import 'package:spotholes_android/models/spothole.dart';
+import 'package:spotholes_android/utilities/custom_icons.dart';
+import 'package:spotholes_android/widgets/auto_press_button.dart';
 
 class RegisterSpotholeModal extends StatefulWidget {
   final LatLng latLng;
@@ -88,13 +89,11 @@ class RegisterSpotholeModalState extends State<RegisterSpotholeModal>
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildOption('assets/images/risks/categoria_buraco.png', 'Buraco',
-                  () {
+              _buildOption(CustomIcons.riskCategoryUnitary, 'Buraco', () {
                 updateOptions(Category.unitary);
               }),
-              _buildOption(
-                  'assets/images/risks/categoria_trecho_esburacado.png',
-                  'Trecho\nEsburacado', () {
+              _buildOption(CustomIcons.riskCategoryStrech, 'Trecho\nEsburacado',
+                  () {
                 updateOptions(Category.strech);
               }),
             ],
@@ -104,17 +103,14 @@ class RegisterSpotholeModalState extends State<RegisterSpotholeModal>
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildOption('assets/images/risks/buraco_na_pista.png', 'Buraco',
-                  () {
+              _buildOption(CustomIcons.riskTypePothole, 'Buraco', () {
                 registerSpotholeType(Type.pothole);
               }),
-              _buildOption('assets/images/risks/buraco_acentuado_na_pista.png',
-                  'Buraco\nAcentuado', () {
+              _buildOption(CustomIcons.riskTypeDeepHole, 'Buraco\nAcentuado',
+                  () {
                 registerSpotholeType(Type.deepHole);
               }),
-              _buildOption(
-                  'assets/images/risks/pista_irregular.png', 'Pista\nIrregular',
-                  () {
+              _buildOption(CustomIcons.riskTypeJagged, 'Pista\nIrregular', () {
                 registerSpotholeType(Type.jagged);
               }),
             ],
@@ -138,14 +134,14 @@ class RegisterSpotholeModalState extends State<RegisterSpotholeModal>
   }
 }
 
-Widget _buildOption(String imagePath, String text, VoidCallback onPressed) {
+Widget _buildOption(Image image, String text, VoidCallback onPressed) {
   return GestureDetector(
     onTap: onPressed,
     child: Column(
       children: [
-        Image.asset(imagePath, width: 70, height: 70), // Imagem
+        image,
         const SizedBox(height: 8),
-        Text(text, textAlign: TextAlign.center), // Texto referente à imagem
+        Text(text, textAlign: TextAlign.center),
       ],
     ),
   );

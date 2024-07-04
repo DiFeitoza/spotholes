@@ -1,8 +1,10 @@
+import 'package:custom_info_window/custom_info_window.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:signals/signals.dart';
+import 'package:signals/signals_flutter.dart';
 
 final getIt = GetIt.instance;
 
@@ -16,5 +18,9 @@ void setupDependencies() {
   getIt.registerSingleton<Signal<LocationData?>>(Signal<LocationData?>(null));
 
   // Setup Map Assets
-  getIt.registerSingleton<Signal<Map<String, Marker>>>(Signal<Map<String, Marker>>({}));
+  getIt.registerSingleton<Signal<Map<String, Marker>>>(
+      Signal<Map<String, Marker>>({}));
+
+  getIt.registerSingleton<CustomInfoWindowController>(
+      CustomInfoWindowController());
 }
