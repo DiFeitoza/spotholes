@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:custom_info_window/custom_info_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -8,9 +7,10 @@ import 'package:location/location.dart';
 import 'package:signals/signals_flutter.dart';
 import 'package:spotholes_android/config/environment_config.dart';
 import 'package:spotholes_android/mixins/spothole_mixin.dart';
-// import 'package:spotholes_android/package/custom_info_windows.dart';
+import 'package:spotholes_android/package/custom_info_windows.dart';
 import 'package:spotholes_android/services/service_locator.dart';
 import 'package:spotholes_android/utilities/constants.dart';
+import 'package:spotholes_android/widgets/delete_spothole_alert_dialog.dart';
 import 'package:spotholes_android/widgets/location_marker_modal.dart';
 import 'package:spotholes_android/widgets/main_draggable_sheet.dart';
 
@@ -153,6 +153,20 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
     setState(() {});
   }
 
+  void showDeleteSpotholeAlertDialog(String spotholeId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DeleteSpotholeAlertDialog(
+          onConfirm: () {
+            deleteSpothole(spotholeId);
+            Navigator.of(context).pop();
+          },
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     _loadCurrentLocation();
@@ -201,9 +215,6 @@ class BaseMapPageState extends State<BaseMapPage> with RegisterSpothole {
                 ),
                 CustomInfoWindow(
                   controller: customInfoWindowController,
-                  height: 160,
-                  width: 200,
-                  offset: 40,
                 ),
                 Positioned(
                   bottom: 150,
