@@ -86,7 +86,7 @@ class CustomInfoWindowState extends State<CustomInfoWindow> {
     if (_size == null) {
       final RenderBox renderBox = context.findRenderObject() as RenderBox;
       _size = renderBox.size;
-    }    
+    }
 
     ScreenCoordinate screenCoordinate = await widget
         .controller.googleMapController!

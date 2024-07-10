@@ -1,36 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:spotholes_android/mixins/spothole_mixin.dart';
-import 'package:spotholes_android/models/spothole.dart';
+
+import '../models/spothole.dart';
 
 class AutoPressButton extends StatefulWidget {
-  final LatLng position;
+  final Function onRegister;
 
-  const AutoPressButton({super.key, required this.position});
+  const AutoPressButton({super.key, required this.onRegister});
 
   @override
   AutoPressButtonState createState() => AutoPressButtonState();
 }
 
 class AutoPressButtonState extends State<AutoPressButton>
-    with SingleTickerProviderStateMixin, RegisterSpothole {
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation _animation;
 
-  // TODO reset animation
-  // void resetAnimation() {
-  //   _animationController.reset();
-  //   Future.delayed(
-  //     const Duration(seconds: 1),
-  //   ).then(
-  //     (val) {
-  //       _animationController.forward();
-  //     },
-  //   );
-  // }
-
   autoRegisterSpothole() {
-    registerSpothole(widget.position, Category.unitary, Type.pothole);
+    widget.onRegister(Category.unitary, Type.pothole);
     Navigator.pop(context);
   }
 
@@ -38,8 +25,6 @@ class AutoPressButtonState extends State<AutoPressButton>
   void initState() {
     _animationController =
         AnimationController(vsync: this, duration: const Duration(seconds: 10));
-
-    // TODO aproveitei a lógica de um site, lá usa end como 1 e não adiciona o listener
     _animation = Tween(begin: 35.0, end: 100.0).animate(_animationController)
       ..addListener(() {
         setState(() {});
@@ -56,7 +41,6 @@ class AutoPressButtonState extends State<AutoPressButton>
     super.initState();
   }
 
-  // TODO Tive que adicionar o dispose, porque estava dando erro na aplicação
   @override
   void dispose() {
     _animationController.dispose();

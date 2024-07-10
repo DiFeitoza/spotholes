@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:location/location.dart';
-import 'package:signals/signals_flutter.dart';
-import 'package:spotholes_android/mixins/spothole_mixin.dart';
-import 'package:spotholes_android/services/service_locator.dart';
-import 'package:spotholes_android/widgets/custom_button.dart';
+
+import '../widgets/custom_button.dart';
 
 class MainDraggableSheet extends StatefulWidget {
-  const MainDraggableSheet({super.key});
+  const MainDraggableSheet(
+      {super.key, required this.registerPotholeCurrentLocation});
+
+  final Function registerPotholeCurrentLocation;
 
   @override
   MainDraggableSheetState createState() => MainDraggableSheetState();
 }
 
-class MainDraggableSheetState extends State<MainDraggableSheet>
-    with RegisterSpothole {
+class MainDraggableSheetState extends State<MainDraggableSheet> {
   late ScrollController scrollController;
 
   @override
@@ -29,7 +28,7 @@ class MainDraggableSheetState extends State<MainDraggableSheet>
   }
 
   _registerSpotholeModal(BuildContext context) {
-    registerSpotholeModal(context, getIt<Signal<LocationData?>>().value);
+    widget.registerPotholeCurrentLocation();
   }
 
   @override
@@ -78,7 +77,6 @@ class MainDraggableSheetState extends State<MainDraggableSheet>
                         child: ListView(
                           scrollDirection: Axis.horizontal,
                           children: <Widget>[
-                            // Adicione seus botões aqui
                             CustomButton(
                                 label: 'Rotas',
                                 color: Colors.green,

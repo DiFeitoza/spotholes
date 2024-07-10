@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:spotholes_android/mixins/spothole_mixin.dart';
 
-class LocationMarkerModal extends StatelessWidget with RegisterSpothole {
+class LocationMarkerModal extends StatelessWidget {
   final LatLng position;
+  final Function onRegister;
 
-  LocationMarkerModal({super.key, required this.position});
+  const LocationMarkerModal(
+      {super.key, required this.position, required this.onRegister});
 
-  _registerSpotholeModal(BuildContext context) {
+  void _registerSpotholeModal(BuildContext context) {
     Navigator.pop(context);
-    registerSpotholeModal(context, position);
+    onRegister();
   }
 
   Container customButton(
@@ -68,26 +69,24 @@ class LocationMarkerModal extends StatelessWidget with RegisterSpothole {
           leading: const Icon(Icons.place),
           title: const Text('Localização selecionada'),
           subtitle: Text(
-              'Latitude: ${position.latitude}, Longitude: ${position.longitude}'),
+            'Latitude: ${position.latitude}, Longitude: ${position.longitude}',
+          ),
         ),
         const ListTile(
           leading: Icon(Icons.info),
           title: Text('Informações'),
-          // Adicione aqui o espaço para informações
         ),
         SizedBox(
           height: 70.0,
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: <Widget>[
-              // Adicione seus botões aqui
               customButton(
                   label: 'Rotas', color: Colors.green, onPressed: () {}),
               customButton(
-                  label: 'Alertar',
-                  onPressed: () {
-                    _registerSpotholeModal(context);
-                  }),
+                label: 'Alertar',
+                onPressed: () => _registerSpotholeModal(context),
+              ),
               customButton(label: 'Salvar', onPressed: () {}),
               customButton(label: 'Excluir', onPressed: () {}),
             ],

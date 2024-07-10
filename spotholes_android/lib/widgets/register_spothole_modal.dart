@@ -1,57 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:spotholes_android/mixins/spothole_mixin.dart';
-import 'package:spotholes_android/models/spothole.dart';
-import 'package:spotholes_android/utilities/custom_icons.dart';
-import 'package:spotholes_android/widgets/auto_press_button.dart';
+
+import '../models/spothole.dart';
+import '../utilities/custom_icons.dart';
+import '../widgets/auto_press_button.dart';
 
 class RegisterSpotholeModal extends StatefulWidget {
-  final LatLng latLng;
+  const RegisterSpotholeModal({super.key, required this.onRegister});
 
-  const RegisterSpotholeModal({super.key, required this.latLng});
+  final Function onRegister;
 
   @override
   RegisterSpotholeModalState createState() => RegisterSpotholeModalState();
 }
 
-class RegisterSpotholeModalState extends State<RegisterSpotholeModal>
-    with RegisterSpothole {
+class RegisterSpotholeModalState extends State<RegisterSpotholeModal> {
   bool showButtons = true;
   Category riskCategory = Category.unitary;
   Type riskType = Type.pothole;
 
-  Container customButton(
-      {required String label, color, required VoidCallback onPressed}) {
-    return Container(
-      margin: const EdgeInsets.all(8.0),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.black,
-          backgroundColor: color,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.0),
-          ),
-        ),
-        onPressed: onPressed,
-        child: Text(label),
-      ),
-    );
+  void updateOptions(Category category) {
+    riskCategory = category;
+    setState(() {
+      showButtons = false; // Esconder os botões
+    });
+  }
+
+  void registerSpotholeType(Type type) {
+    widget.onRegister(riskCategory, type);
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    void updateOptions(Category category) {
-      riskCategory = category;
-      setState(() {
-        showButtons = false; // Esconder os botões
-      });
-    }
-
-    void registerSpotholeType(Type type) {
-      registerSpothole(widget.latLng, riskCategory, type);
-      Navigator.pop(context);
-    }
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -119,10 +99,10 @@ class RegisterSpotholeModalState extends State<RegisterSpotholeModal>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            AutoPressButton(position: widget.latLng),
+            AutoPressButton(onRegister: widget.onRegister),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context); // Cancelar
+                Navigator.pop(context);
               },
               child: const Text('Cancelar'),
             )

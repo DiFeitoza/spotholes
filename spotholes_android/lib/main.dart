@@ -1,11 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:spotholes_android/config/environment_config.dart';
-import 'package:spotholes_android/pages/base_map_page.dart';
-import 'package:spotholes_android/services/service_locator.dart';
-import 'package:spotholes_android/utilities/custom_icons.dart';
 
+import '../config/environment_config.dart';
+import '../pages/base_map_page.dart';
+import '../services/service_locator.dart';
+import '../utilities/custom_icons.dart';
 import 'firebase_options.dart';
 
 void main() async {
