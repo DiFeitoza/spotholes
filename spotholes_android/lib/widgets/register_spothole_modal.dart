@@ -5,9 +5,24 @@ import '../utilities/custom_icons.dart';
 import '../widgets/auto_press_button.dart';
 
 class RegisterSpotholeModal extends StatefulWidget {
-  const RegisterSpotholeModal({super.key, required this.onRegister});
+  const RegisterSpotholeModal({
+    super.key,
+    required this.onRegister,
+    required this.title,
+    required this.textOnRegisterButton,
+    this.isCountdown = true,
+    this.timerInSeconds = 10,
+    this.riskCategory = Category.unitary,
+    this.riskType = Type.pothole,
+  });
 
+  final String title;
+  final String textOnRegisterButton;
+  final bool isCountdown;
+  final int timerInSeconds;
   final Function onRegister;
+  final Category riskCategory;
+  final Type riskType;
 
   @override
   RegisterSpotholeModalState createState() => RegisterSpotholeModalState();
@@ -15,18 +30,23 @@ class RegisterSpotholeModal extends StatefulWidget {
 
 class RegisterSpotholeModalState extends State<RegisterSpotholeModal> {
   bool showButtons = true;
-  Category riskCategory = Category.unitary;
-  Type riskType = Type.pothole;
+  late Category riskCategory = widget.riskCategory;
+  late Type riskType = widget.riskType;
 
-  void updateOptions(Category category) {
+  void setRiskCategoryAndUpdateModal(Category category) {
     riskCategory = category;
     setState(() {
-      showButtons = false; // Esconder os botões
+      showButtons = false;
     });
   }
 
   void registerSpotholeType(Type type) {
     widget.onRegister(riskCategory, type);
+    Navigator.pop(context);
+  }
+
+  void registerSpotholeCurrentType() {
+    widget.onRegister(riskCategory, riskType);
     Navigator.pop(context);
   }
 
@@ -49,11 +69,12 @@ class RegisterSpotholeModalState extends State<RegisterSpotholeModal> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Text(
-                'Para alertar um risco, selecione:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                widget.title,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             IconButton(
@@ -70,11 +91,11 @@ class RegisterSpotholeModalState extends State<RegisterSpotholeModal> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildOption(CustomIcons.riskCategoryUnitary, 'Buraco', () {
-                updateOptions(Category.unitary);
+                setRiskCategoryAndUpdateModal(Category.unitary);
               }),
               _buildOption(CustomIcons.riskCategoryStrech, 'Trecho\nEsburacado',
                   () {
-                updateOptions(Category.strech);
+                setRiskCategoryAndUpdateModal(Category.strech);
               }),
             ],
           )
@@ -99,12 +120,28 @@ class RegisterSpotholeModalState extends State<RegisterSpotholeModal> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            AutoPressButton(onRegister: widget.onRegister),
+            if (widget.isCountdown)
+              AutoPressButton(
+                onRegister: widget.onRegister,
+                textOnRegisterButton: widget.textOnRegisterButton,
+                timerInSeconds: widget.timerInSeconds,
+              )
+            else
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(100, 40),
+                ),
+                onPressed: registerSpotholeCurrentType,
+                child: Text(widget.textOnRegisterButton),
+              ),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: const Text('Cancelar'),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: Colors.red),
+              ),
             )
           ],
         ),

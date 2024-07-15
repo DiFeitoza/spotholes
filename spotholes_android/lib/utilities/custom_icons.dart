@@ -28,9 +28,9 @@ class CustomIcons {
       'assets/images/risks/categoria_trecho_esburacado.png',
       width: 70,
       height: 70);
-  static Image potholeAddIcon = Image.asset('assets/images/pothole_add_icon.png');
+  static Image potholeAddIcon =
+      Image.asset('assets/images/pothole_add_icon.png');
 
-  // TODO automatizar ajuste de tamanho de ícones com base no tamanho de tela ou componentes do google maps, em vez de fazer ajuste em hardcode gerar assets com tamanhos corretos para teste.
   static setupCustomIcons() {
     ImageSizeAdjust.getCustomIcon('assets/images/source_route.png', 110)
         .then((icon) {

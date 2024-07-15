@@ -3,9 +3,15 @@ import 'package:flutter/material.dart';
 import '../models/spothole.dart';
 
 class AutoPressButton extends StatefulWidget {
+  final String textOnRegisterButton;
+  final int timerInSeconds;
   final Function onRegister;
 
-  const AutoPressButton({super.key, required this.onRegister});
+  const AutoPressButton(
+      {super.key,
+      required this.textOnRegisterButton,
+      required this.onRegister,
+      this.timerInSeconds = 10});
 
   @override
   AutoPressButtonState createState() => AutoPressButtonState();
@@ -23,21 +29,20 @@ class AutoPressButtonState extends State<AutoPressButton>
 
   @override
   void initState() {
-    _animationController =
-        AnimationController(vsync: this, duration: const Duration(seconds: 10));
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: widget.timerInSeconds),
+    );
     _animation = Tween(begin: 35.0, end: 100.0).animate(_animationController)
-      ..addListener(() {
-        setState(() {});
-      });
-
+      ..addListener(
+        () => setState(() {}),
+      );
     _animationController.addStatusListener((AnimationStatus status) {
       if (status == AnimationStatus.completed) {
         autoRegisterSpothole();
       }
     });
-
     _animationController.forward();
-
     super.initState();
   }
 
@@ -75,9 +80,10 @@ class AutoPressButtonState extends State<AutoPressButton>
                 color: Colors.transparent,
                 border: Border.all(color: Colors.black26),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  "Adicionar",
+                  widget.textOnRegisterButton,
+                  style: const TextStyle(fontWeight: FontWeight.w400),
                 ),
               ),
             ),

@@ -75,6 +75,9 @@ class CustomInfoWindowState extends State<CustomInfoWindow> {
     widget.controller.hideInfoWindow = _hideInfoWindow;
   }
 
+  double getDevicePixelRatio() =>
+      Platform.isAndroid ? MediaQuery.of(context).devicePixelRatio : 1.0;
+
   /// Calculate the position on [CustomInfoWindow] and redraw on screen.
   void _updateInfoWindow() async {
     if (_latLng == null ||
@@ -91,8 +94,7 @@ class CustomInfoWindowState extends State<CustomInfoWindow> {
     ScreenCoordinate screenCoordinate = await widget
         .controller.googleMapController!
         .getScreenCoordinate(_latLng!);
-    double devicePixelRatio =
-        Platform.isAndroid ? MediaQuery.of(context).devicePixelRatio : 1.0;
+    double devicePixelRatio = getDevicePixelRatio();
     double left =
         (screenCoordinate.x.toDouble() / devicePixelRatio) - (_size!.width / 2);
     double top = (screenCoordinate.y.toDouble() / devicePixelRatio) -

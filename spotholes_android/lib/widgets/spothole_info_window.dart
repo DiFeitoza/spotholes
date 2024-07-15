@@ -74,29 +74,43 @@ class _SpotholeInfoWindowState extends State<SpotholeInfoWindow> {
                     return <PopupMenuEntry<String>>[
                       const PopupMenuItem<String>(
                         value: 'edit',
-                        textStyle: TextStyle(
-                          color: Colors.white,
-                        ),
-                        child: Text(
-                          'Editar',
-                          style: TextStyle(color: Colors.white),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Editar',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            Icon(
+                              Icons.edit,
+                              color: Colors.white,
+                            ),
+                          ],
                         ),
                       ),
+                      const PopupMenuDivider(),
                       const PopupMenuItem<String>(
                         value: 'delete',
-                        textStyle: TextStyle(
-                          color: Colors.white,
-                        ),
-                        child: Text(
-                          'Excluir',
-                          style: TextStyle(color: Colors.white),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Excluir',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                            ),
+                          ],
                         ),
                       ),
                     ];
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(3.0), // Espaçamento interno
+                    padding: const EdgeInsets.all(3.0),
                     decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: Colors.white,
                         width: 1.0,

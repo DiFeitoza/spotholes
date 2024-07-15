@@ -10,7 +10,7 @@ class EnvironmentConfig {
     return _googleApiKey;
   }
 
-  static Future<void> loadEnvVariables() async {
-    await dotenv.load(fileName: ".env");
+  static loadEnvVariables() {
+    dotenv.load(fileName: ".env");
   }
 }

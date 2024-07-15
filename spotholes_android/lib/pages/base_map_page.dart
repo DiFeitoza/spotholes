@@ -3,7 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 
 import '../controllers/base_map_controller.dart';
-import '../package/custom_info_windows.dart';
+import '../package/custom_info_window.dart';
 import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
 import '../widgets/main_draggable_sheet.dart';
@@ -26,13 +26,13 @@ class BaseMapPageState extends State<BaseMapPage> {
   static const LatLng destinationRouteLocation =
       LatLng(-4.971373575301382, -39.018458585833024);
 
-  void _loadCurrentLocation() async {
-    await _baseMapController.loadCurrentLocation();
+  void _loadCurrentLocation() {
+    _baseMapController.loadCurrentLocation();
     setState(() {});
   }
 
-  Future _centerView() async {
-    await _baseMapController.centerView();
+  void _centerView() {
+    _baseMapController.centerView();
   }
 
   void _onMapCreated(mapController) {
@@ -83,7 +83,7 @@ class BaseMapPageState extends State<BaseMapPage> {
                     initialCameraPosition: CameraPosition(
                       target: LatLng(_currentLocationSignal.value!.latitude!,
                           _currentLocationSignal.value!.longitude!),
-                      zoom: 18.5,
+                      zoom: defaultZoomMap,
                     ),
                     polylines: {
                       Polyline(
