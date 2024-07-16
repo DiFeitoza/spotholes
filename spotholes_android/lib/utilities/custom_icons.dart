@@ -1,0 +1,52 @@
+import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:spotholes_android/utilities/image_size_adjust.dart';
+
+class CustomIcons {
+  static BitmapDescriptor sourceIcon = BitmapDescriptor.defaultMarker;
+  static BitmapDescriptor destinationIcon = BitmapDescriptor.defaultMarker;
+  static BitmapDescriptor currentLocationIcon = BitmapDescriptor.defaultMarker;
+  static BitmapDescriptor potholeSignIcon = BitmapDescriptor.defaultMarker;
+
+  static Image riskTypePothole = Image.asset(
+      'assets/images/risks/buraco_na_pista.png',
+      width: 70,
+      height: 70);
+  static Image riskTypeDeepHole = Image.asset(
+      'assets/images/risks/buraco_acentuado_na_pista.png',
+      width: 70,
+      height: 70);
+  static Image riskTypeJagged = Image.asset(
+      'assets/images/risks/pista_irregular.png',
+      width: 70,
+      height: 70);
+  static Image riskCategoryUnitary = Image.asset(
+      'assets/images/risks/categoria_buraco.png',
+      width: 70,
+      height: 70);
+  static Image riskCategoryStrech = Image.asset(
+      'assets/images/risks/categoria_trecho_esburacado.png',
+      width: 70,
+      height: 70);
+  static Image potholeAddIcon =
+      Image.asset('assets/images/pothole_add_icon.png');
+
+  static setupCustomIcons() {
+    ImageSizeAdjust.getCustomIcon('assets/images/source_route.png', 110)
+        .then((icon) {
+      sourceIcon = icon;
+    });
+    ImageSizeAdjust.getCustomIcon('assets/images/end_route.png', 110)
+        .then((icon) {
+      destinationIcon = icon;
+    });
+    ImageSizeAdjust.getCustomIcon("assets/images/badge_red.png", 150)
+        .then((icon) {
+      currentLocationIcon = icon;
+    });
+    ImageSizeAdjust.getCustomIcon('assets/images/pothole_sign.png', 100)
+        .then((icon) {
+      potholeSignIcon = icon;
+    });
+  }
+}
