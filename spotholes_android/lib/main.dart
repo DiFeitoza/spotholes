@@ -27,6 +27,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Spotholes',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
@@ -37,7 +38,15 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const BaseMapPage(),
+      home: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Container(
+            color: Colors.white,
+            child: const BaseMapPage(),
+          ),
+        ),
+      ),
     );
   }
 }

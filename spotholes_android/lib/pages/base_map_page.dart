@@ -7,6 +7,7 @@ import '../package/custom_info_window.dart';
 import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
 import '../widgets/main_draggable_sheet.dart';
+import '../widgets/search_bar.dart';
 
 class BaseMapPage extends StatefulWidget {
   const BaseMapPage({super.key});
@@ -67,85 +68,79 @@ class BaseMapPageState extends State<BaseMapPage> {
   @override
   Widget build(BuildContext context) {
     return Watch(
-      (_) => Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            "SpotHoles Android",
-            style: TextStyle(color: Colors.black, fontSize: 16),
-          ),
-        ),
-        body: _currentLocationSignal.value == null
-            ? const Center(child: Text("Carregando..."))
-            : Stack(
-                children: [
-                  GoogleMap(
-                    onMapCreated: _onMapCreated,
-                    initialCameraPosition: CameraPosition(
-                      target: LatLng(_currentLocationSignal.value!.latitude!,
-                          _currentLocationSignal.value!.longitude!),
-                      zoom: defaultZoomMap,
+      (_) => _currentLocationSignal.value == null
+          ? const Center(
+              child: Text("Carregando..."),
+            )
+          : Stack(
+              children: [
+                GoogleMap(
+                  onMapCreated: _onMapCreated,
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(_currentLocationSignal.value!.latitude!,
+                        _currentLocationSignal.value!.longitude!),
+                    zoom: defaultZoomMap,
+                  ),
+                  polylines: {
+                    Polyline(
+                      polylineId: const PolylineId("route"),
+                      points: _baseMapController.routePolylineCoordinates.value,
+                      color: primaryColor,
+                      width: 6,
                     ),
-                    polylines: {
-                      Polyline(
-                        polylineId: const PolylineId("route"),
-                        points:
-                            _baseMapController.routePolylineCoordinates.value,
-                        color: primaryColor,
-                        width: 6,
-                      ),
-                    },
-                    markers: _markersSignal.value.values.toSet(),
-                    onLongPress: _onLongPress,
-                    zoomControlsEnabled: false,
-                    onTap: (position) {
-                      _customInfoWindowControllerSignal.value.hideInfoWindow!();
-                    },
-                    onCameraMove: (position) {
-                      _customInfoWindowControllerSignal.value.onCameraMove!();
-                    },
-                  ),
-                  CustomInfoWindow(
-                    controller: _customInfoWindowControllerSignal.value,
-                  ),
-                  Positioned(
-                    bottom: 150,
-                    right: 10,
-                    left: 0,
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: <Widget>[
-                          FloatingActionButton(
-                            onPressed: _registerPotholeCurrentLocation,
-                            heroTag: null,
-                            child: CustomIcons.potholeAddIcon,
-                          ),
-                          const SizedBox(height: 10),
-                          FloatingActionButton(
-                            onPressed: () {
-                              _baseMapController.loadSpotholeMarkers(context);
-                            },
-                            heroTag: null,
-                            child: const Icon(Icons.sync),
-                          ),
-                          const SizedBox(height: 10),
-                          FloatingActionButton(
-                            onPressed: _centerView,
-                            heroTag: null,
-                            child: const Icon(Icons.location_searching),
-                          ),
-                        ],
-                      ),
+                  },
+                  markers: _markersSignal.value.values.toSet(),
+                  onLongPress: _onLongPress,
+                  zoomControlsEnabled: false,
+                  onTap: (position) {
+                    _customInfoWindowControllerSignal.value.hideInfoWindow!();
+                  },
+                  onCameraMove: (position) {
+                    _customInfoWindowControllerSignal.value.onCameraMove!();
+                  },
+                ),
+                CustomInfoWindow(
+                  controller: _customInfoWindowControllerSignal.value,
+                ),
+                Positioned(
+                  bottom: 150,
+                  right: 10,
+                  left: 0,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        FloatingActionButton(
+                          onPressed: _registerPotholeCurrentLocation,
+                          heroTag: null,
+                          child: CustomIcons.potholeAddIcon,
+                        ),
+                        const SizedBox(height: 10),
+                        FloatingActionButton(
+                          onPressed: () {
+                            _baseMapController.loadSpotholeMarkers(context);
+                          },
+                          heroTag: null,
+                          child: const Icon(Icons.sync),
+                        ),
+                        const SizedBox(height: 10),
+                        FloatingActionButton(
+                          onPressed: _centerView,
+                          heroTag: null,
+                          child: const Icon(Icons.location_searching),
+                        ),
+                      ],
                     ),
                   ),
-                  MainDraggableSheet(
-                    registerPotholeCurrentLocation: () =>
-                        _registerPotholeCurrentLocation(),
-                  ),
-                ],
-              ),
-      ),
+                ),
+                const CustomHeader(),
+                MainDraggableSheet(
+                  registerPotholeCurrentLocation: () =>
+                      _registerPotholeCurrentLocation(),
+                ),
+              ],
+            ),
     );
   }
 }

@@ -71,27 +71,37 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
               SliverList(
                 delegate: SliverChildListDelegate(
                   [
-                    Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                      SizedBox(
-                        height: 60.0,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: <Widget>[
-                            CustomButton(
-                                label: 'Rotas',
-                                color: Colors.green,
-                                onPressed: () {}),
-                            CustomButton(
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 60.0,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: [
+                              CustomButton(
+                                  label: 'Rotas',
+                                  color: Colors.green,
+                                  onPressed: () {}),
+                              CustomButton(
                                 label: 'Alertar',
                                 onPressed: () {
                                   _registerSpotholeModal(context);
-                                }),
-                            CustomButton(label: 'Salvar', onPressed: () {}),
-                            CustomButton(label: 'Excluir', onPressed: () {}),
-                          ],
-                        ),
-                      )
-                    ]),
+                                },
+                              ),
+                              CustomButton(
+                                label: 'Salvar',
+                                onPressed: () {},
+                              ),
+                              CustomButton(
+                                label: 'Excluir',
+                                onPressed: () {},
+                              ),
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
                   ],
                 ),
               ),
