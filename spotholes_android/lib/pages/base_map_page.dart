@@ -16,16 +16,11 @@ class BaseMapPage extends StatefulWidget {
 }
 
 class BaseMapPageState extends State<BaseMapPage> {
-  final _baseMapController = BaseMapController();
+  final _baseMapController = BaseMapController.instance;
   late final _customInfoWindowControllerSignal =
       _baseMapController.customInfoWindowControllerSignal;
   late final _markersSignal = _baseMapController.markersSignal;
   late final _currentLocationSignal = _baseMapController.currentLocationSignal;
-
-  static const LatLng sourceRouteLocation =
-      LatLng(-4.9712212645114935, -39.01834056864541);
-  static const LatLng destinationRouteLocation =
-      LatLng(-4.971373575301382, -39.018458585833024);
 
   void _loadCurrentLocation() {
     _baseMapController.loadCurrentLocation();
@@ -38,11 +33,6 @@ class BaseMapPageState extends State<BaseMapPage> {
 
   void _onMapCreated(mapController) {
     _baseMapController.onMapCreated(mapController);
-  }
-
-  void _loadRoute(sourceLocation, destinationLocation) {
-    _baseMapController.loadRoute(sourceLocation, destinationLocation);
-    setState(() {});
   }
 
   void _onLongPress(LatLng position) {
@@ -60,7 +50,6 @@ class BaseMapPageState extends State<BaseMapPage> {
   @override
   void initState() {
     _loadCurrentLocation();
-    _loadRoute(sourceRouteLocation, destinationRouteLocation);
     _baseMapController.loadSpotholeMarkers(context);
     super.initState();
   }
@@ -84,7 +73,7 @@ class BaseMapPageState extends State<BaseMapPage> {
                   polylines: {
                     Polyline(
                       polylineId: const PolylineId("route"),
-                      points: _baseMapController.routePolylineCoordinates.value,
+                      points: _baseMapController.routePolylineCoordinates,
                       color: primaryColor,
                       width: 6,
                     ),

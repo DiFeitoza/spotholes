@@ -19,6 +19,10 @@ import '../widgets/register_spothole_modal.dart';
 import '../widgets/spothole_info_window.dart';
 
 class BaseMapController {
+  BaseMapController._();
+  static final BaseMapController _instance = BaseMapController._();
+  static BaseMapController get instance => _instance;
+
   final databaseReference = getIt<DatabaseReference>();
   late final dataBaseSpotholesRef = databaseReference.child('spotholes');
 
@@ -35,10 +39,14 @@ class BaseMapController {
 
   get markersSignal => _markersSignal;
   get currentLocationSignal => _currentLocationSignal;
-  get routePolylineCoordinates => _routePolylineCoordinates;
+  get routePolylineCoordinates => _routePolylineCoordinates.value;
   get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
   get currentLocationLatLng => LatLng(_currentLocationSignal.value!.latitude!,
       _currentLocationSignal.value!.longitude!);
+
+  String currentLocationLatLngURLPattern() =>
+      "${_currentLocationSignal.value!.latitude!.toString()}"
+      "%2C${_currentLocationSignal.value!.longitude!.toString()}";
 
   void updateCameraGoogleMapsController(position, [zoom = defaultZoomMap]) {
     _googleMapController!.animateCamera(
@@ -80,7 +88,9 @@ class BaseMapController {
     updateCameraGoogleMapsController(currentLocationLatLng);
   }
 
-  Future loadRoute(sourceLocation, destinationLocation) async {
+  Future loadRoute(destinationLocation, {sourceLocation}) async {
+    sourceLocation ??= currentLocationLatLng;
+
     final polylinePoints = PolylinePoints();
 
     await polylinePoints
@@ -93,11 +103,10 @@ class BaseMapController {
         .then(
       (response) {
         if (response.points.isNotEmpty) {
-          for (var point in response.points) {
-            _routePolylineCoordinates.value.add(
-              LatLng(point.latitude, point.longitude),
-            );
-          }
+          final newList = response.points
+              .map((point) => LatLng(point.latitude, point.longitude))
+              .toList();
+          _routePolylineCoordinates.value = newList;
           loadRouteMarkers(sourceLocation, destinationLocation);
         }
       },
@@ -149,7 +158,8 @@ class BaseMapController {
       onTap: () {
         _customInfoWindowControllerSignal.value.addInfoWindow!(
           SpotholeInfoWindow(
-            editSpothole: () => editSpotholeModal(context, key, spothole.category, spothole.type),
+            editSpothole: () => editSpotholeModal(
+                context, key, spothole.category, spothole.type),
             showDeleteSpotholeAlertDialog: () =>
                 showDeleteSpotholeAlertDialog(context, key),
             spothole: spothole,
