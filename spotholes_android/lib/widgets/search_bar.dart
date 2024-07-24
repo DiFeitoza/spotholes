@@ -72,8 +72,8 @@ class CustomTextField extends StatelessWidget {
           focusColor: Colors.blue,
         ),
         // debounceTime: 800, // default 600 ms,
-        countries: const ["br"], // optional by default null is set
-        isLatLngRequired: true, // if you required coordinates from place detail
+        countries: const ["br"],
+        isLatLngRequired: true,
         getPlaceDetailWithLatLng: (PlaceDetails placeDetails) {
           _baseMapController.loadPlaceLocation(context, placeDetails);
         }, // this callback is called when isLatLngRequired is true
@@ -140,7 +140,6 @@ class CustomSearchCategories extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const SingleChildScrollView(
-      // scrollDirection: Axis.horizontal,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: <Widget>[

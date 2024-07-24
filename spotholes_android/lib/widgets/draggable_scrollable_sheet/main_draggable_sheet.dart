@@ -4,13 +4,9 @@ import '../../controllers/base_map_controller.dart';
 import '../custom_button.dart';
 
 class MainDraggableSheetController {
-  // Function(Widget)? updateHorizontalListButtons;
-  // Function(Widget)? updateSliverListContent;
   Function(String)? updateData;
 
   void dispose() {
-    // updateSliverListContent = null;
-    // updateHorizontalListButtons = null;
     updateData = null;
   }
 }
@@ -34,9 +30,6 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
   void initState() {
     super.initState();
     scrollController = ScrollController();
-    // widget.controller.updateSliverListContent = _updateSliverListContent;
-    // widget.controller.updateHorizontalListButtons =
-    // _updateHorizontalListButtons;
     widget.controller.updateData = _updateData;
   }
 
@@ -74,21 +67,6 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
       _data = data;
     });
   }
-
-//   void _updateHorizontalListButtons(Widget dynamicContent) {
-//     setState(() {
-//       // Atualize o conteúdo conforme necessário
-//       _horizontalListButtons = [dynamicContent];
-//     });
-//   }
-
-// // Método para atualizar o conteúdo do SliverList
-//   void _updateSliverListContent(Widget dynamicContent) {
-//     setState(() {
-//       // Atualize o conteúdo conforme necessário
-//       _horizontalListButtons = [dynamicContent];
-//     });
-//   }
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +127,7 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
                 ),
               ),
               SliverToBoxAdapter(
-                child: Text(_data), // Substitua pelo seu conteúdo de texto
+                child: Text(_data),
               ),
             ],
           ),

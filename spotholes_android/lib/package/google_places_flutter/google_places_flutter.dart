@@ -226,7 +226,6 @@ class GooglePlaceAutoCompleteTextFieldState
   }
 
   void getPlaceDetailsFromPlaceId(Prediction prediction) async {
-    //String key = GlobalConfiguration().getString('google_maps_key');
     var url = "https://maps.googleapis.com/maps/api/place/details/json?"
         "placeid=${prediction.placeId}"
         "&key=${widget.googleAPIKey}";

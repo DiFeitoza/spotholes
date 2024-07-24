@@ -89,7 +89,7 @@ class BaseMapPageState extends State<BaseMapPage> {
                   controller: _customInfoWindowControllerSignal.value,
                 ),
                 Positioned(
-                  bottom: 150,
+                  bottom: 160,
                   right: 10,
                   left: 0,
                   child: Align(

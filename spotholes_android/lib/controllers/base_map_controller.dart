@@ -17,7 +17,6 @@ import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
 import '../widgets/delete_spothole_alert_dialog.dart';
 import '../widgets/draggable_scrollable_sheet/draggable_scrollable_sheet_type.dart';
-import '../widgets/draggable_scrollable_sheet/place_draggable_sheet.dart';
 import '../widgets/modal/location_marker_modal.dart';
 import '../widgets/modal/register_spothole_modal.dart';
 import '../widgets/spothole_info_window.dart';
@@ -36,7 +35,6 @@ class BaseMapController {
       Signal<CustomInfoWindowController>(CustomInfoWindowController());
   final _textEditingController = TextEditingController();
   final _searchBarFocusNode = FocusNode();
-  // final _mainDraggableSheetController = MainDraggableSheetController();
 
   late Signal draggableScrollableSheetSignal = signal(
     DraggableScrollableSheetTypes.initial.widget,
@@ -113,13 +111,8 @@ class BaseMapController {
       position: position,
     );
     updateCameraGoogleMapsController(position);
-    draggableScrollableSheetSignal = signal(
-      PlaceDraggableSheet(
-        controller: PlaceDraggableSheetController(),
-        destinationLocation: position,
-        placeDetails: placeDetails,
-      ),
-    );
+    changeDraggableSheet(
+        DraggableScrollableSheetTypes.place(position, placeDetails));
   }
 
   void removeMarkerByKey(key) {

@@ -6,13 +6,9 @@ import '../../controllers/base_map_controller.dart';
 import '../custom_button.dart';
 
 class PlaceDraggableSheetController {
-  // Function(Widget)? updateHorizontalListButtons;
-  // Function(Widget)? updateSliverListContent;
   Function(String)? updateData;
 
   void dispose() {
-    // updateSliverListContent = null;
-    // updateHorizontalListButtons = null;
     updateData = null;
   }
 }
@@ -36,16 +32,11 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
   late ScrollController scrollController;
   late PlaceDraggableSheetController placeDraggableSheetController;
   final _baseMapController = BaseMapController.instance;
-  // String _data = "";
 
   @override
   void initState() {
     super.initState();
     scrollController = ScrollController();
-    // widget.controller.updateSliverListContent = _updateSliverListContent;
-    // widget.controller.updateHorizontalListButtons =
-    // _updateHorizontalListButtons;
-    // widget.controller.updateData = _updateData;
   }
 
   @override
@@ -83,30 +74,9 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
     ];
   }
 
-  // void _updateData(String data) {
-  //   setState(() {
-  //     _data = data;
-  //   });
-  // }
-
   void closeDraggable() {
     _baseMapController.closePlaceDraggableSheet();
   }
-
-//   void _updateHorizontalListButtons(Widget dynamicContent) {
-//     setState(() {
-//       // Atualize o conteúdo conforme necessário
-//       _horizontalListButtons = [dynamicContent];
-//     });
-//   }
-
-// // Método para atualizar o conteúdo do SliverList
-//   void _updateSliverListContent(Widget dynamicContent) {
-//     setState(() {
-//       // Atualize o conteúdo conforme necessário
-//       _horizontalListButtons = [dynamicContent];
-//     });
-//   }
 
   @override
   Widget build(BuildContext context) {
@@ -155,8 +125,7 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                   toolbarHeight: 80,
                   leadingWidth: 50,
                   bottom: PreferredSize(
-                    preferredSize:
-                        const Size.fromHeight(16), // Altura do subtítulo
+                    preferredSize: const Size.fromHeight(16),
                     child: Container(
                       color: Colors.white,
                       child: Text(
@@ -168,10 +137,8 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                   leading: IconButton(
                     icon: Image.network(
                       placeDetailsResult.icon!,
-                      // width: 24, // Largura desejada
-                      // height: 24, // Altura desejada
                       fit: BoxFit.contain,
-                    ), // Ícone de seta de voltar
+                    ),
                     onPressed: () {},
                   ),
                   actions: [
@@ -253,14 +220,10 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                         subtitle: Text(
                           'Latitude: ${placeDetailsResult.geometry!.location!.lat}\n'
                           'Longitude: ${placeDetailsResult.geometry!.location!.lng}',
-                          // '${placeDetailsResult.vicinity}',
                         ),
                       ),
                   ]),
                 ),
-                // SliverToBoxAdapter(
-                //   child: _data, // Substitua pelo seu conteúdo de texto
-                // ),
               ],
             ),
           ),
