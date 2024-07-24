@@ -109,6 +109,20 @@ class Result {
     data['website'] = website;
     return data;
   }
+
+  String resultToString() {
+    return "placeId: $placeId\n"
+    "icon: $icon\n"
+    "name: $name\n"
+    "reference: $reference\n"
+    "scope: $scope\n"
+    "vicinity: $vicinity\n"
+    "website: $website\n"
+    "url: $url\n"
+    "LatLng: ${geometry!.location!.lat}, ${geometry!.location!.lng}\n"
+    "types: $types\n"
+    "utcOffset: $utcOffset\n";   
+  }
 }
 
 class AddressComponents {

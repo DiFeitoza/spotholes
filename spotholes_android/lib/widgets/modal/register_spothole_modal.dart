@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../models/spothole.dart';
-import '../utilities/custom_icons.dart';
-import '../widgets/auto_press_button.dart';
+import '../../models/spothole.dart';
+import '../../utilities/custom_icons.dart';
+import '../auto_press_button.dart';
 
 class RegisterSpotholeModal extends StatefulWidget {
   const RegisterSpotholeModal({

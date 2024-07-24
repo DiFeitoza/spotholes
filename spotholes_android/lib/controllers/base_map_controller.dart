@@ -10,12 +10,16 @@ import 'package:signals/signals_flutter.dart';
 import '../config/environment_config.dart';
 import '../models/spothole.dart';
 import '../package/custom_info_window.dart';
+import '../package/google_places_flutter/model/place_details.dart'
+    hide Location;
 import '../services/service_locator.dart';
 import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
 import '../widgets/delete_spothole_alert_dialog.dart';
-import '../widgets/location_marker_modal.dart';
-import '../widgets/register_spothole_modal.dart';
+import '../widgets/draggable_scrollable_sheet/draggable_scrollable_sheet_type.dart';
+import '../widgets/draggable_scrollable_sheet/place_draggable_sheet.dart';
+import '../widgets/modal/location_marker_modal.dart';
+import '../widgets/modal/register_spothole_modal.dart';
 import '../widgets/spothole_info_window.dart';
 
 class BaseMapController {
@@ -30,6 +34,13 @@ class BaseMapController {
   final _googleMapControllerCompleter = Completer();
   final _customInfoWindowControllerSignal =
       Signal<CustomInfoWindowController>(CustomInfoWindowController());
+  final _textEditingController = TextEditingController();
+  final _searchBarFocusNode = FocusNode();
+  // final _mainDraggableSheetController = MainDraggableSheetController();
+
+  late Signal draggableScrollableSheetSignal = signal(
+    DraggableScrollableSheetTypes.initial.widget,
+  );
 
   final _location = Location();
 
@@ -40,6 +51,8 @@ class BaseMapController {
   get markersSignal => _markersSignal;
   get currentLocationSignal => _currentLocationSignal;
   get routePolylineCoordinates => _routePolylineCoordinates.value;
+  get textEditingController => _textEditingController;
+  get searchBarFocusNode => _searchBarFocusNode;
   get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
   get currentLocationLatLng => LatLng(_currentLocationSignal.value!.latitude!,
       _currentLocationSignal.value!.longitude!);
@@ -88,9 +101,39 @@ class BaseMapController {
     updateCameraGoogleMapsController(currentLocationLatLng);
   }
 
+  changeDraggableSheet(DraggableScrollableSheetType type) {
+    draggableScrollableSheetSignal.value = type.widget;
+  }
+
+  void loadPlaceLocation(context, PlaceDetails placeDetails) {
+    final placeLocation = placeDetails.result!.geometry!.location!;
+    final position = LatLng(placeLocation.lat!, placeLocation.lng!);
+    _markersSignal.value['selectedPlace'] = Marker(
+      markerId: MarkerId(position.toString()),
+      position: position,
+    );
+    updateCameraGoogleMapsController(position);
+    draggableScrollableSheetSignal = signal(
+      PlaceDraggableSheet(
+        controller: PlaceDraggableSheetController(),
+        destinationLocation: position,
+        placeDetails: placeDetails,
+      ),
+    );
+  }
+
+  void removeMarkerByKey(key) {
+    markersSignal.value.remove(key);
+  }
+
+  void closePlaceDraggableSheet() {
+    removeMarkerByKey('selectedPlace');
+    changeDraggableSheet(DraggableScrollableSheetTypes.initial);
+    centerView();
+  }
+
   Future loadRoute(destinationLocation, {sourceLocation}) async {
     sourceLocation ??= currentLocationLatLng;
-
     final polylinePoints = PolylinePoints();
 
     await polylinePoints
@@ -133,7 +176,7 @@ class BaseMapController {
   void deleteSpothole(String spotholeId) {
     dataBaseSpotholesRef.child(spotholeId).remove();
     _customInfoWindowControllerSignal.value.hideInfoWindow!();
-    markersSignal.value.remove(spotholeId);
+    removeMarkerByKey(spotholeId);
   }
 
   void showDeleteSpotholeAlertDialog(context, String spotholeId) {
@@ -196,7 +239,8 @@ class BaseMapController {
     addSpotholeMarker(context, newSpotHoleRef.key!, newSpothole);
   }
 
-  void registerSpotholeModal(context, position) {
+  void registerSpotholeModal(context, {position}) {
+    final latLng = position ?? currentLocationLatLng;
     showModalBottomSheet(
       context: context,
       builder: (builder) {
@@ -204,7 +248,7 @@ class BaseMapController {
           title: "Para alertar um risco, selecione:",
           textOnRegisterButton: "Adicionar",
           onRegister: (riskCategory, type) =>
-              registerSpothole(context, position, riskCategory, type),
+              registerSpothole(context, latLng, riskCategory, type),
         );
       },
     );
@@ -254,7 +298,7 @@ class BaseMapController {
       builder: (builder) {
         return LocationMarkerModal(
           position: position,
-          onRegister: () => registerSpotholeModal(context, position),
+          onRegister: () => registerSpotholeModal(context, position: position),
         );
       },
     );

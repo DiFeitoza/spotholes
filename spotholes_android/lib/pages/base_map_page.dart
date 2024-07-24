@@ -6,7 +6,6 @@ import '../controllers/base_map_controller.dart';
 import '../package/custom_info_window.dart';
 import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
-import '../widgets/main_draggable_sheet.dart';
 import '../widgets/search_bar.dart';
 
 class BaseMapPage extends StatefulWidget {
@@ -41,9 +40,7 @@ class BaseMapPageState extends State<BaseMapPage> {
   }
 
   void _registerPotholeCurrentLocation() {
-    LatLng position = LatLng(_currentLocationSignal.value!.latitude!,
-        _currentLocationSignal.value!.longitude!);
-    _baseMapController.registerSpotholeModal(context, position);
+    _baseMapController.registerSpotholeModal(context);
     setState(() {});
   }
 
@@ -124,10 +121,7 @@ class BaseMapPageState extends State<BaseMapPage> {
                   ),
                 ),
                 const CustomHeader(),
-                MainDraggableSheet(
-                  registerPotholeCurrentLocation: () =>
-                      _registerPotholeCurrentLocation(),
-                ),
+                _baseMapController.draggableScrollableSheetSignal.value,
               ],
             ),
     );

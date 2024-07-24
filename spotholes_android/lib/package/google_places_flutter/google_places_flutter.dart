@@ -114,7 +114,7 @@ class GooglePlaceAutoCompleteTextFieldState
                 focusNode: widget.focusNode ?? FocusNode(),
                 textInputAction: widget.textInputAction,
                 onFieldSubmitted: (value) {
-                  widget.formSubmitCallback!();
+                  textChanged(value);
                 },
                 onChanged: (string) {
                   subject.add(string);
@@ -129,7 +129,9 @@ class GooglePlaceAutoCompleteTextFieldState
                 ? const SizedBox()
                 : isCrossBtn && _showCrossIconWidget()
                     ? IconButton(
-                        onPressed: clearData, icon: const Icon(Icons.close))
+                        onPressed: clearData,
+                        icon: const Icon(Icons.close),
+                      )
                     : const SizedBox()
           ],
         ),
@@ -137,7 +139,23 @@ class GooglePlaceAutoCompleteTextFieldState
     );
   }
 
-  getLocation(String text) async {
+  @override
+  void initState() {
+    super.initState();
+    _dio = Dio();
+    subject.stream
+        .distinct()
+        .debounceTime(Duration(milliseconds: widget.debounceTime))
+        .listen(textChanged);
+  }
+
+  textChanged(String text) async {
+    if (text.isNotEmpty) {
+      getLocation(text);
+    }
+  }
+
+  void getLocation(String text) async {
     String apiURL =
         "https://maps.googleapis.com/maps/api/place/autocomplete/json?"
         "input=$text"
@@ -207,19 +225,21 @@ class GooglePlaceAutoCompleteTextFieldState
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _dio = Dio();
-    subject.stream
-        .distinct()
-        .debounceTime(Duration(milliseconds: widget.debounceTime))
-        .listen(textChanged);
-  }
+  void getPlaceDetailsFromPlaceId(Prediction prediction) async {
+    //String key = GlobalConfiguration().getString('google_maps_key');
+    var url = "https://maps.googleapis.com/maps/api/place/details/json?"
+        "placeid=${prediction.placeId}"
+        "&key=${widget.googleAPIKey}";
+    try {
+      Response response = await _dio.get(url);
 
-  textChanged(String text) async {
-    if (text != '') {
-      getLocation(text);
+      PlaceDetails placeDetails = PlaceDetails.fromJson(response.data);
+
+      widget.getPlaceDetailWithLatLng!(placeDetails);
+      widget.focusNode!.unfocus();
+    } catch (e) {
+      var errorHandler = ErrorHandler.internal().handleError(e);
+      _showSnackBar("${errorHandler.message}");
     }
   }
 
@@ -281,27 +301,6 @@ class GooglePlaceAutoCompleteTextFieldState
     _overlayEntry!.markNeedsBuild();
   }
 
-  void getPlaceDetailsFromPlaceId(Prediction prediction) async {
-    //String key = GlobalConfiguration().getString('google_maps_key');
-    var url = "https://maps.googleapis.com/maps/api/place/details/json?"
-        "placeid=${prediction.placeId}"
-        "&key=${widget.googleAPIKey}";
-    try {
-      Response response = await _dio.get(url);
-
-      PlaceDetails placeDetails = PlaceDetails.fromJson(response.data);
-
-      prediction.lat = placeDetails.result!.geometry!.location!.lat;
-      prediction.lng = placeDetails.result!.geometry!.location!.lng;
-
-      widget.getPlaceDetailWithLatLng!(prediction);
-      widget.focusNode!.unfocus();
-    } catch (e) {
-      var errorHandler = ErrorHandler.internal().handleError(e);
-      _showSnackBar("${errorHandler.message}");
-    }
-  }
-
   void clearData() {
     widget.textEditingController.clear();
     if (_cancelToken?.isCancelled == false) {
@@ -348,8 +347,7 @@ PlaceDetails parsePlaceDetailMap(Map responseBody) {
 
 typedef ItemClick = void Function(Prediction postalCodeResponse);
 
-typedef GetPlaceDetailswWithLatLng = void Function(
-    Prediction postalCodeResponse);
+typedef GetPlaceDetailswWithLatLng = void Function(PlaceDetails placeDetails);
 
 typedef ListItemBuilder = Widget Function(
     BuildContext context, int index, Prediction prediction);

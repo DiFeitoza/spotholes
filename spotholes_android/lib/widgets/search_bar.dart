@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:spotholes_android/controllers/base_map_controller.dart';
 
 import '../config/environment_config.dart';
 import '../package/google_places_flutter/google_places_flutter.dart';
+import '../package/google_places_flutter/model/place_details.dart';
 import '../package/google_places_flutter/model/prediction.dart';
 
 class CustomHeader extends StatelessWidget {
@@ -49,8 +49,9 @@ class CustomSearchContainer extends StatelessWidget {
 
 class CustomTextField extends StatelessWidget {
   CustomTextField({super.key});
-  final _textEditingController = TextEditingController();
   final _baseMapController = BaseMapController.instance;
+  late final _textEditingController = _baseMapController.textEditingController;
+  late final searchBarfocusNode = _baseMapController.searchBarFocusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -73,10 +74,8 @@ class CustomTextField extends StatelessWidget {
         // debounceTime: 800, // default 600 ms,
         countries: const ["br"], // optional by default null is set
         isLatLngRequired: true, // if you required coordinates from place detail
-        getPlaceDetailWithLatLng: (Prediction prediction) {
-          final destinationLocation = LatLng(prediction.lat!, prediction.lng!);
-          _baseMapController.loadRoute(destinationLocation);
-          // this method will return latlng with place detail
+        getPlaceDetailWithLatLng: (PlaceDetails placeDetails) {
+          _baseMapController.loadPlaceLocation(context, placeDetails);
         }, // this callback is called when isLatLngRequired is true
         itemClick: (Prediction prediction) {
           _textEditingController.text = prediction.description!;
@@ -106,7 +105,7 @@ class CustomTextField extends StatelessWidget {
           );
         },
         textInputAction: TextInputAction.search,
-        focusNode: FocusNode(),
+        focusNode: searchBarfocusNode,
         // if you want to add seperator between list items
         seperatedBuilder: const Divider(),
         // want to show close icon
