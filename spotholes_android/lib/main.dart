@@ -6,6 +6,7 @@ import '../config/environment_config.dart';
 import '../pages/base_map_page.dart';
 import '../services/service_locator.dart';
 import '../utilities/custom_icons.dart';
+import '../utilities/dark_mode_context_extension.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -39,10 +40,10 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: context.isDarkMode ? Colors.black : Colors.white,
         body: SafeArea(
           child: Container(
-            color: Colors.white,
+            color: context.isDarkMode ? Colors.white : Colors.black,
             child: const BaseMapPage(),
           ),
         ),
