@@ -1,16 +1,105 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:spotholes_android/controllers/base_map_controller.dart';
+import 'package:spotholes_android/utilities/custom_snackbar.dart';
 
-class LocationMarkerModal extends StatelessWidget {
+class LocationMarkerModal extends StatefulWidget {
   final LatLng position;
   final Function onRegister;
 
   const LocationMarkerModal(
       {super.key, required this.position, required this.onRegister});
 
+  @override
+  LocationMarkerModalState createState() => LocationMarkerModalState();
+}
+
+class LocationMarkerModalState extends State<LocationMarkerModal> {
+  final _baseMapController = BaseMapController.instance;
+  final title = "Alfinete inserido";
+  String firstPlaceDetails = "";
+
+  @override
+  void initState() {
+    getPlacemarksFromLatLng(widget.position);
+    super.initState();
+  }
+
+  formmatedPlacemark(Placemark placemark) {
+    final parts = [
+      placemark.street,
+      placemark.locality,
+      placemark.subLocality,
+      placemark.subAdministrativeArea,
+      placemark.country,
+    ].where((part) => part != '');
+
+    String formatted = parts.join(', ');
+
+    if (placemark.postalCode != null) {
+      formatted += ' - ${placemark.postalCode}';
+    }
+    return formatted;
+  }
+
+  // formmatedPlacemark(Placemark placemark) {
+  //   String formmated = '';
+  //   if (placemark.street != null) {
+  //     formmated += '${placemark.street}, ';
+  //   }
+  //   if (placemark.locality != null) {
+  //     formmated += '${placemark.locality}, ';
+  //   }
+  //   if (placemark.subLocality != null) {
+  //     formmated += '${placemark.subLocality}, ';
+  //   }
+  //   if (placemark.subAdministrativeArea != null) {
+  //     formmated += '${placemark.subAdministrativeArea}, ';
+  //   }
+  //   if (placemark.country != null) {
+  //     formmated += '${placemark.country}';
+  //   }
+  //   if (formmated.endsWith(', ')) {
+  //     return formmated.substring(0, formmated.length - 2);
+  //   }
+  //   if (placemark.postalCode != null) {
+  //     formmated += ' - ${placemark.postalCode}';
+  //   }
+  //   return formmated;
+  // }
+
+  getPlacemarksFromLatLng(LatLng latLng) async {
+    try {
+      await placemarkFromCoordinates(latLng.latitude, latLng.longitude).then(
+        (placemarkList) {
+          setState(() {
+            firstPlaceDetails =
+                'Próximo à ${formmatedPlacemark(placemarkList.first)}';
+          });
+          // for (var placemark in placemarkList) {
+          //   placesDetails += '${formmatedPlaceMark(placemark)}\n';
+          // }
+        },
+      );
+    } catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        CustomSnackbar.show(
+            context: context,
+            message:
+                'Não foi possível carregar as informações, verifique a conexão com a internet');
+      });
+    }
+  }
+
   void _registerSpotholeModal(BuildContext context) {
     Navigator.pop(context);
-    onRegister();
+    widget.onRegister();
+  }
+
+  _loadRoute(destinationLocation) {
+    _baseMapController.removeMarkerByKey('selectedPlace');
+    _baseMapController.loadRoute(destinationLocation);
   }
 
   Container customButton(
@@ -50,11 +139,12 @@ class LocationMarkerModal extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Text(
-                'Alfinete inserido',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                title,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
             IconButton(
@@ -66,15 +156,23 @@ class LocationMarkerModal extends StatelessWidget {
           ],
         ),
         ListTile(
-          leading: const Icon(Icons.place),
-          title: const Text('Localização selecionada'),
-          subtitle: Text(
-            'Latitude: ${position.latitude}, Longitude: ${position.longitude}',
+          leading: const Icon(Icons.info),
+          title: Text(
+            'Informações',
+            style: Theme.of(context).textTheme.titleMedium,
           ),
+          subtitle: Text(firstPlaceDetails),
         ),
-        const ListTile(
-          leading: Icon(Icons.info),
-          title: Text('Informações'),
+        ListTile(
+          leading: const Icon(Icons.place),
+          title: Text(
+            'Localização selecionada',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          subtitle: Text(
+            'Latitude: ${widget.position.latitude}\n'
+            'Longitude: ${widget.position.longitude}',
+          ),
         ),
         SizedBox(
           height: 70.0,
@@ -82,7 +180,10 @@ class LocationMarkerModal extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             children: <Widget>[
               customButton(
-                  label: 'Rotas', color: Colors.green, onPressed: () {}),
+                label: 'Rotas',
+                color: Colors.green,
+                onPressed: () => _loadRoute(widget.position),
+              ),
               customButton(
                 label: 'Alertar',
                 onPressed: () => _registerSpotholeModal(context),

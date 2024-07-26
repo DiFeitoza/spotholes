@@ -17,7 +17,6 @@ import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
 import '../widgets/delete_spothole_alert_dialog.dart';
 import '../widgets/draggable_scrollable_sheet/draggable_scrollable_sheet_type.dart';
-import '../widgets/modal/location_marker_modal.dart';
 import '../widgets/modal/register_spothole_modal.dart';
 import '../widgets/spothole_info_window.dart';
 
@@ -109,18 +108,21 @@ class BaseMapController {
     _markersSignal.value['selectedPlace'] = Marker(
       markerId: MarkerId(position.toString()),
       position: position,
+      infoWindow: InfoWindow(
+        title: placeDetails.result!.name,
+      ),
     );
     updateCameraGoogleMapsController(position);
-    changeDraggableSheet(
-        DraggableScrollableSheetTypes.place(position, placeDetails));
+    changeDraggableSheet(DraggableScrollableSheetTypes.place(
+        placeDetails: placeDetails, position: position));
   }
 
   void removeMarkerByKey(key) {
     markersSignal.value.remove(key);
   }
 
-  void closePlaceDraggableSheet() {
-    removeMarkerByKey('selectedPlace');
+  void closeDraggableSheet(String key) {
+    removeMarkerByKey(key);
     changeDraggableSheet(DraggableScrollableSheetTypes.initial);
     centerView();
   }
@@ -232,7 +234,7 @@ class BaseMapController {
     addSpotholeMarker(context, newSpotHoleRef.key!, newSpothole);
   }
 
-  void registerSpotholeModal(context, {position}) {
+  void registerSpotholeModal(context, {LatLng? position}) {
     final latLng = position ?? currentLocationLatLng;
     showModalBottomSheet(
       context: context,
@@ -284,16 +286,16 @@ class BaseMapController {
     _markersSignal.value['longPressed'] = Marker(
       markerId: MarkerId(position.toString()),
       position: position,
+      infoWindow: InfoWindow(
+        title: '${position.latitude}, ${position.longitude}',
+      ),
     );
     updateCameraGoogleMapsController(position);
-    showModalBottomSheet(
-      context: context,
-      builder: (builder) {
-        return LocationMarkerModal(
-          position: position,
-          onRegister: () => registerSpotholeModal(context, position: position),
-        );
-      },
+    changeDraggableSheet(
+      DraggableScrollableSheetTypes.location(
+        position: position,
+        onRegister: () => registerSpotholeModal(context, position: position),
+      ),
     );
   }
 }

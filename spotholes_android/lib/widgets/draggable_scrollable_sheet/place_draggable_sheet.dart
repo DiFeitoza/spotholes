@@ -17,11 +17,11 @@ class PlaceDraggableSheet extends StatefulWidget {
   const PlaceDraggableSheet(
       {super.key,
       required this.controller,
-      required this.destinationLocation,
+      required this.position,
       required this.placeDetails});
 
   final PlaceDraggableSheetController controller;
-  final LatLng destinationLocation;
+  final LatLng position;
   final PlaceDetails placeDetails;
 
   @override
@@ -29,39 +29,31 @@ class PlaceDraggableSheet extends StatefulWidget {
 }
 
 class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
-  late ScrollController scrollController;
-  late PlaceDraggableSheetController placeDraggableSheetController;
+  final ScrollController scrollController = ScrollController();
+  // late PlaceDraggableSheetController placeDraggableSheetController;
   final _baseMapController = BaseMapController.instance;
 
   @override
   void initState() {
     super.initState();
-    scrollController = ScrollController();
   }
 
-  @override
-  void dispose() {
-    scrollController.dispose();
-    super.dispose();
-  }
-
-  _loadRoute(destinationLocation) {
+  _loadRoute(position) {
     _baseMapController.removeMarkerByKey('selectedPlace');
-    _baseMapController.loadRoute(destinationLocation);
+    _baseMapController.loadRoute(position);
   }
 
-  List<Widget> _horizontalListButtons(
-      BuildContext context, destinationLocation) {
+  List<Widget> _horizontalListButtons(BuildContext context, position) {
     return [
       CustomButton(
         label: 'Rota',
-        color: Colors.green,
-        onPressed: () => _loadRoute(destinationLocation),
+        bgColor: Colors.tealAccent.shade400,
+        onPressed: () => _loadRoute(position),
       ),
       CustomButton(
         label: 'Alertar',
         onPressed: () => _baseMapController.registerSpotholeModal(context,
-            position: destinationLocation),
+            position: position),
       ),
       CustomButton(
         label: 'Salvar',
@@ -75,7 +67,7 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
   }
 
   void closeDraggable() {
-    _baseMapController.closePlaceDraggableSheet();
+    _baseMapController.closeDraggableSheet('selectedPlace');
   }
 
   @override
@@ -159,7 +151,7 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                             child: ListView(
                               scrollDirection: Axis.horizontal,
                               children: _horizontalListButtons(
-                                  context, widget.destinationLocation),
+                                  context, widget.position),
                             ),
                           )
                         ],
@@ -175,54 +167,80 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                   centerTitle: true,
                 ),
                 SliverList(
-                  delegate: SliverChildListDelegate([
-                    if (placeDetailsResult.website != null &&
-                        placeDetailsResult.url != null)
-                      ListTile(
-                        leading: const Icon(Icons.info),
-                        title: const Text(
-                          'Web',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: RichText(
-                          text: TextSpan(
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.black,
+                  delegate: SliverChildListDelegate(
+                    [
+                      if (placeDetailsResult.website != null &&
+                          placeDetailsResult.url != null)
+                        ListTile(
+                          leading: const Icon(Icons.info),
+                          title: Text(
+                            'Web',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          subtitle: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.black,
+                              ),
+                              children: [
+                                if (placeDetailsResult.website != null) ...[
+                                  TextSpan(
+                                    text: 'Site: ',
+                                    style:
+                                        Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                  TextSpan(
+                                      text: '${placeDetailsResult.website!}\n'),
+                                ],
+                                if (placeDetailsResult.url != null) ...[
+                                  TextSpan(
+                                    text: 'Gmaps: ',
+                                    style:
+                                        Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                  TextSpan(text: placeDetailsResult.url!)
+                                ],
+                              ],
                             ),
-                            children: [
-                              if (placeDetailsResult.website != null) ...[
-                                const TextSpan(
-                                  text: 'Site: ',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                TextSpan(
-                                    text: '${placeDetailsResult.website!}\n'),
-                              ],
-                              if (placeDetailsResult.url != null) ...[
-                                const TextSpan(
-                                  text: 'Gmaps: ',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                TextSpan(text: placeDetailsResult.url!)
-                              ],
-                            ],
                           ),
                         ),
-                      ),
-                    if (placeDetailsResult.geometry?.location != null)
-                      ListTile(
-                        leading: const Icon(Icons.place),
-                        title: const Text(
-                          'Localização Geográfica',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          'Latitude: ${placeDetailsResult.geometry!.location!.lat}\n'
-                          'Longitude: ${placeDetailsResult.geometry!.location!.lng}',
-                        ),
-                      ),
-                  ]),
+                      if (placeDetailsResult.geometry?.location != null)
+                        ListTile(
+                          leading: const Icon(Icons.place),
+                          title: Text(
+                            'Localização Geográfica',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          subtitle: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.black,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: 'Latitude:',
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
+                                ),
+                                TextSpan(
+                                    text:
+                                        '${placeDetailsResult.geometry!.location!.lat}\n'),
+                                TextSpan(
+                                  text: 'Longitude:',
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
+                                ),
+                                TextSpan(
+                                    text:
+                                        '${placeDetailsResult.geometry!.location!.lng}\n'),
+                              ],
+                            ),
+                          ),
+                        )
+                    ],
+                  ),
                 ),
               ],
             ),

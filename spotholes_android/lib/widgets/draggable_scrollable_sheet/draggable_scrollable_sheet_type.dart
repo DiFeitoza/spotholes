@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:spotholes_android/package/google_places_flutter/model/place_details.dart';
 import 'package:spotholes_android/widgets/draggable_scrollable_sheet/route_draggable_sheet.dart';
 
+import 'location_draggable_sheet.dart';
 import 'main_draggable_sheet.dart';
 import 'place_draggable_sheet.dart';
 
@@ -18,21 +19,33 @@ class DraggableScrollableSheetTypes {
   );
 
   static DraggableScrollableSheetType place(
-      LatLng destination, PlaceDetails placeDetails) {
+      {required PlaceDetails placeDetails, required LatLng position}) {
     return DraggableScrollableSheetType(
       widget: PlaceDraggableSheet(
         placeDetails: placeDetails,
         controller: PlaceDraggableSheetController(),
-        destinationLocation: destination,
+        position: position,
       ),
     );
   }
 
-  static DraggableScrollableSheetType route(LatLng destination) {
+  static DraggableScrollableSheetType location(
+      {required Function onRegister, required LatLng position}) {
+    return DraggableScrollableSheetType(
+      widget: LocationDraggableSheet(
+        controller: LocationDraggableSheetController(),
+        onRegister: onRegister,
+        position: position,
+      ),
+    );
+  }
+
+  static DraggableScrollableSheetType route(
+      {required LatLng destinationLocation}) {
     return DraggableScrollableSheetType(
       widget: RouteDraggableSheet(
         controller: RouteDraggableSheetController(),
-        destinationLocation: destination,
+        destinationLocation: destinationLocation,
       ),
     );
   }
