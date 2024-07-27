@@ -31,7 +31,8 @@ class CustomSearchContainer extends StatelessWidget {
         height: 50,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(width: 0.5)
         ),
         child: Row(
           children: <Widget>[
@@ -171,6 +172,7 @@ class CustomCategoryChip extends StatelessWidget {
         ],
       ),
       backgroundColor: Colors.grey[50],
+      side: const BorderSide(width: 0.5),
     );
   }
 }

@@ -3,7 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:spotholes_android/package/google_places_flutter/model/place_details.dart';
 
 import '../../controllers/base_map_controller.dart';
-import '../custom_button.dart';
+import '../button/custom_button.dart';
 
 class PlaceDraggableSheetController {
   Function(String)? updateData;
@@ -32,6 +32,7 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
   final ScrollController scrollController = ScrollController();
   // late PlaceDraggableSheetController placeDraggableSheetController;
   final _baseMapController = BaseMapController.instance;
+  late final _canvasColor = Theme.of(context).canvasColor;
 
   @override
   void initState() {
@@ -84,7 +85,8 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
         return Container(
           clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(
-            color: Theme.of(context).canvasColor,
+            color: _canvasColor,
+            border: Border.all(width: 0.5),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(25),
               topRight: Radius.circular(25),
@@ -116,14 +118,12 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                   centerTitle: false,
                   toolbarHeight: 80,
                   leadingWidth: 50,
+                  backgroundColor: _canvasColor,
                   bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(16),
-                    child: Container(
-                      color: Colors.white,
-                      child: Text(
-                        placeDetailsResult.formattedAddress!,
-                        // maxLines: 1,
-                      ),
+                    child: Text(
+                      placeDetailsResult.formattedAddress!,
+                      // maxLines: 1,
                     ),
                   ),
                   leading: IconButton(

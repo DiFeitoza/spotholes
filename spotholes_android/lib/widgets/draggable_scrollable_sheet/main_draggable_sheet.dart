@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../controllers/base_map_controller.dart';
-import '../custom_button.dart';
+import '../button/custom_button.dart';
 
 class MainDraggableSheetController {
   Function(String)? updateData;
@@ -24,6 +24,7 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
   late ScrollController scrollController;
   late MainDraggableSheetController mainDraggableSheetController;
   final _baseMapController = BaseMapController.instance;
+  late final _canvasColor = Theme.of(context).canvasColor;
   String _data = "";
 
   @override
@@ -43,7 +44,7 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
     return [
       CustomButton(
         label: 'Buscar',
-        color: Colors.green,
+        bgColor: Colors.tealAccent.shade400,
         onPressed: () => FocusScope.of(context)
             .requestFocus(_baseMapController.searchBarFocusNode),
       ),
@@ -80,7 +81,8 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
         return Container(
           clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(
-            color: Theme.of(context).canvasColor,
+            color: _canvasColor,
+            border: Border.all(width: 0.5),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(25),
               topRight: Radius.circular(25),
@@ -102,11 +104,12 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
                   ),
                 ),
               ),
-              const SliverAppBar(
-                title: Text('Para onde vamos?'),
+              SliverAppBar(
+                title: const Text('Para onde vamos?'),
                 primary: false,
                 pinned: true,
                 centerTitle: false,
+                backgroundColor: _canvasColor,
               ),
               SliverList(
                 delegate: SliverChildListDelegate(

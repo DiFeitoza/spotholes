@@ -5,7 +5,7 @@ import 'package:signals/signals_flutter.dart';
 import '../controllers/base_map_controller.dart';
 import '../package/custom_info_window.dart';
 import '../utilities/constants.dart';
-import '../utilities/custom_icons.dart';
+import '../widgets/button/custom_fab_list.dart';
 import '../widgets/search_bar.dart';
 
 class BaseMapPage extends StatefulWidget {
@@ -20,15 +20,8 @@ class BaseMapPageState extends State<BaseMapPage> {
       _baseMapController.customInfoWindowControllerSignal;
   late final _markersSignal = _baseMapController.markersSignal;
   late final _currentLocationSignal = _baseMapController.currentLocationSignal;
-
-  void _loadCurrentLocation() {
-    _baseMapController.loadCurrentLocation();
-    setState(() {});
-  }
-
-  void _centerView() {
-    _baseMapController.centerView();
-  }
+  late final _draggableScrollableSheetSignal =
+      _baseMapController.draggableScrollableSheetSignal;
 
   void _onMapCreated(mapController) {
     _baseMapController.onMapCreated(mapController);
@@ -36,17 +29,11 @@ class BaseMapPageState extends State<BaseMapPage> {
 
   void _onLongPress(LatLng position) {
     _baseMapController.onLongPress(context, position);
-    setState(() {});
-  }
-
-  void _registerPotholeCurrentLocation() {
-    _baseMapController.registerSpotholeModal(context);
-    setState(() {});
   }
 
   @override
   void initState() {
-    _loadCurrentLocation();
+    _baseMapController.loadCurrentLocation();
     _baseMapController.loadSpotholeMarkers(context);
     super.initState();
   }
@@ -88,40 +75,9 @@ class BaseMapPageState extends State<BaseMapPage> {
                 CustomInfoWindow(
                   controller: _customInfoWindowControllerSignal.value,
                 ),
-                Positioned(
-                  bottom: 160,
-                  right: 10,
-                  left: 0,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: <Widget>[
-                        FloatingActionButton(
-                          onPressed: _registerPotholeCurrentLocation,
-                          heroTag: null,
-                          child: CustomIcons.potholeAddIcon,
-                        ),
-                        const SizedBox(height: 10),
-                        FloatingActionButton(
-                          onPressed: () {
-                            _baseMapController.loadSpotholeMarkers(context);
-                          },
-                          heroTag: null,
-                          child: const Icon(Icons.sync),
-                        ),
-                        const SizedBox(height: 10),
-                        FloatingActionButton(
-                          onPressed: _centerView,
-                          heroTag: null,
-                          child: const Icon(Icons.location_searching),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                CustomFABList(),
                 const CustomHeader(),
-                _baseMapController.draggableScrollableSheetSignal.value,
+                _draggableScrollableSheetSignal.value,
               ],
             ),
     );

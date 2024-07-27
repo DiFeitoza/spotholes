@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/spothole.dart';
+import '../../models/spothole.dart';
 
 class AutoPressButton extends StatefulWidget {
   final String textOnRegisterButton;

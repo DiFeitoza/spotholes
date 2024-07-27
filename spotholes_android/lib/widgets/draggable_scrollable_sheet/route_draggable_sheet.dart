@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../controllers/base_map_controller.dart';
-import '../custom_button.dart';
+import '../button/custom_button.dart';
 
 class RouteDraggableSheetController {
   Function(String)? updateData;
@@ -27,6 +27,7 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
   late ScrollController scrollController;
   late RouteDraggableSheetController routeDraggableSheetController;
   final _baseMapController = BaseMapController.instance;
+  late final _canvasColor = Theme.of(context).canvasColor;
   String _data = "";
 
   @override
@@ -93,7 +94,8 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
         return Container(
           clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(
-            color: Theme.of(context).canvasColor,
+            color: _canvasColor,
+            border: Border.all(width: 0.5),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(25),
               topRight: Radius.circular(25),
@@ -120,6 +122,7 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                 primary: false,
                 pinned: true,
                 centerTitle: false,
+                backgroundColor: _canvasColor,
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.close),

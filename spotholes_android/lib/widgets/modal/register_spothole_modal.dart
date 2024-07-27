@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/spothole.dart';
 import '../../utilities/custom_icons.dart';
-import '../auto_press_button.dart';
+import '../button/auto_press_button.dart';
 
 class RegisterSpotholeModal extends StatefulWidget {
   const RegisterSpotholeModal({
@@ -73,8 +73,7 @@ class RegisterSpotholeModalState extends State<RegisterSpotholeModal> {
               padding: const EdgeInsets.all(16.0),
               child: Text(
                 widget.title,
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 20),
               ),
             ),
             IconButton(

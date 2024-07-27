@@ -5,7 +5,7 @@ import 'package:signals/signals_flutter.dart';
 
 import '../../controllers/base_map_controller.dart';
 import '../../utilities/custom_snackbar.dart';
-import '../custom_button.dart';
+import '../button/custom_button.dart';
 
 class LocationDraggableSheetController {
   Function(String)? updateData;
@@ -35,6 +35,7 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
   late LocationDraggableSheetController controller;
   final scrollController = ScrollController();
   final _baseMapController = BaseMapController.instance;
+  late final _canvasColor = Theme.of(context).canvasColor;
 
   @override
   void initState() {
@@ -61,32 +62,6 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
     }
     return formatted;
   }
-
-  // formmatedPlacemark(Placemark placemark) {
-  //   String formmated = '';
-  //   if (placemark.street != null) {
-  //     formmated += '${placemark.street}, ';
-  //   }
-  //   if (placemark.locality != null) {
-  //     formmated += '${placemark.locality}, ';
-  //   }
-  //   if (placemark.subLocality != null) {
-  //     formmated += '${placemark.subLocality}, ';
-  //   }
-  //   if (placemark.subAdministrativeArea != null) {
-  //     formmated += '${placemark.subAdministrativeArea}, ';
-  //   }
-  //   if (placemark.country != null) {
-  //     formmated += '${placemark.country}';
-  //   }
-  //   if (formmated.endsWith(', ')) {
-  //     return formmated.substring(0, formmated.length - 2);
-  //   }
-  //   if (placemark.postalCode != null) {
-  //     formmated += ' - ${placemark.postalCode}';
-  //   }
-  //   return formmated;
-  // }
 
   getPlacemarksFromLatLng(LatLng latLng) async {
     try {
@@ -118,24 +93,6 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
 
   void _registerSpotholeModal(BuildContext context) {
     widget.onRegister();
-  }
-
-  Container customButton(
-      {required String label, color, required VoidCallback onPressed}) {
-    return Container(
-      margin: const EdgeInsets.all(8.0),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.black,
-          backgroundColor: color,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.0),
-          ),
-        ),
-        onPressed: onPressed,
-        child: Text(label),
-      ),
-    );
   }
 
   List<Widget> _horizontalListButtons(BuildContext context, position) {
@@ -181,7 +138,8 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
         return Container(
           clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(
-            color: Theme.of(context).canvasColor,
+            color: _canvasColor,
+            border: Border.all(width: 0.5),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(25),
               topRight: Radius.circular(25),
@@ -213,14 +171,12 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
                   centerTitle: false,
                   toolbarHeight: 80,
                   leadingWidth: 50,
+                  backgroundColor: _canvasColor,
                   bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(16),
-                    child: Container(
-                      color: Colors.white,
-                      child: Text(
-                        firstPlaceDetails,
-                        // maxLines: 1,
-                      ),
+                    child: Text(
+                      firstPlaceDetails,
+                      // maxLines: 1,
                     ),
                   ),
                   leading: IconButton(
