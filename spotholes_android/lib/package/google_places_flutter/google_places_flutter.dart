@@ -61,7 +61,7 @@ class GooglePlaceAutoCompleteTextField extends StatefulWidget {
       this.containerVerticalPadding,
       this.focusNode,
       this.placeType,
-      this.language = 'pt-br',
+      this.language = 'pt-BR',
       this.clearData,
       this.textInputAction,
       this.formSubmitCallback,

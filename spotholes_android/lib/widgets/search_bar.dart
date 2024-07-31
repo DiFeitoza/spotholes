@@ -13,7 +13,7 @@ class CustomHeader extends StatelessWidget {
     return const Column(
       children: <Widget>[
         CustomSearchContainer(),
-        CustomSearchCategories(),
+        // CustomSearchCategories(),
       ],
     );
   }
@@ -25,14 +25,13 @@ class CustomSearchContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 8,
-          12), //adjust the second value according to the status bar size
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       child: Container(
         height: 50,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(width: 0.5)
+          border: Border.all(width: 0.5),
         ),
         child: Row(
           children: <Widget>[
@@ -113,7 +112,7 @@ class CustomTextField extends StatelessWidget {
         isCrossBtnShown: true,
         // place type
         // placeType: PlaceType.geocode,
-        language: "pt-br",
+        language: "pt-BR",
       ),
     );
   }
@@ -144,7 +143,7 @@ class CustomSearchCategories extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: <Widget>[
-          SizedBox(width: 16),
+          SizedBox(width: 12),
           CustomCategoryChip(Icons.history, "Recentes"),
           SizedBox(width: 12),
           CustomCategoryChip(Icons.bookmark, "Salvos"),

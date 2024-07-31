@@ -52,14 +52,6 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
         label: 'Alertar',
         onPressed: () => _baseMapController.registerSpotholeModal(context),
       ),
-      CustomButton(
-        label: 'Salvar',
-        onPressed: () {},
-      ),
-      CustomButton(
-        label: 'Excluir',
-        onPressed: () {},
-      ),
     ];
   }
 
@@ -72,7 +64,7 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      maxChildSize: 0.8,
+      maxChildSize: 0.5,
       minChildSize: 0.18,
       initialChildSize: 0.18,
       snap: true,

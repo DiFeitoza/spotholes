@@ -56,14 +56,6 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
         onPressed: () => _baseMapController.registerSpotholeModal(context,
             position: position),
       ),
-      CustomButton(
-        label: 'Salvar',
-        onPressed: () {},
-      ),
-      CustomButton(
-        label: 'Excluir',
-        onPressed: () {},
-      ),
     ];
   }
 
@@ -76,11 +68,11 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
     Result placeDetailsResult = widget.placeDetails.result!;
 
     return DraggableScrollableSheet(
-      maxChildSize: 0.8,
-      minChildSize: 0.25,
-      initialChildSize: 0.25,
+      maxChildSize: 0.6,
+      minChildSize: 0.26,
+      initialChildSize: 0.26,
       snap: true,
-      snapSizes: const [0.25, 0.5],
+      snapSizes: const [0.26, 0.6],
       builder: (BuildContext context, scrollController) {
         return Container(
           clipBehavior: Clip.hardEdge,
@@ -115,17 +107,10 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                   title: Text(placeDetailsResult.name!),
                   primary: false,
                   pinned: true,
-                  centerTitle: false,
+                  centerTitle: true,
                   toolbarHeight: 80,
                   leadingWidth: 50,
                   backgroundColor: _canvasColor,
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(16),
-                    child: Text(
-                      placeDetailsResult.formattedAddress!,
-                      // maxLines: 1,
-                    ),
-                  ),
                   leading: IconButton(
                     icon: Image.network(
                       placeDetailsResult.icon!,
@@ -139,6 +124,18 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                       onPressed: closeDraggable,
                     ),
                   ],
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(35),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                      child: Text(
+                        placeDetailsResult.formattedAddress!,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
                 ),
                 SliverList(
                   delegate: SliverChildListDelegate(
@@ -162,9 +159,11 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                 const SliverToBoxAdapter(
                   child: Divider(),
                 ),
-                const SliverAppBar(
-                  title: Text("Mais Informações"),
+                SliverAppBar(
+                  title: const Text("Mais Informações"),
+                  backgroundColor: _canvasColor,
                   centerTitle: true,
+                  leading: const Icon(Icons.info),
                 ),
                 SliverList(
                   delegate: SliverChildListDelegate(
@@ -172,7 +171,7 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                       if (placeDetailsResult.website != null &&
                           placeDetailsResult.url != null)
                         ListTile(
-                          leading: const Icon(Icons.info),
+                          leading: const Icon(Icons.web),
                           title: Text(
                             'Web',
                             style: Theme.of(context).textTheme.titleMedium,
@@ -220,7 +219,7 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                               ),
                               children: [
                                 TextSpan(
-                                  text: 'Latitude:',
+                                  text: 'Latitude: ',
                                   style:
                                       Theme.of(context).textTheme.titleMedium,
                                 ),
@@ -228,7 +227,7 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                                     text:
                                         '${placeDetailsResult.geometry!.location!.lat}\n'),
                                 TextSpan(
-                                  text: 'Longitude:',
+                                  text: 'Longitude: ',
                                   style:
                                       Theme.of(context).textTheme.titleMedium,
                                 ),
