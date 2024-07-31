@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'triangle_clipper.dart';
+import '../triangle_clipper.dart';
 
 class MarkerInfoWindow extends StatefulWidget {
   const MarkerInfoWindow({

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class CustomFBA extends StatelessWidget {
+class CustomFloatingActionButton extends StatelessWidget {
   final String tooltip;
   final Function onPressed;
   final Widget icon;
 
-  const CustomFBA(
+  const CustomFloatingActionButton(
       {super.key,
       required this.tooltip,
       required this.onPressed,

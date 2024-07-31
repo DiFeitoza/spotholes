@@ -19,9 +19,9 @@ import '../utilities/custom_icons.dart';
 import '../utilities/custom_snackbar.dart';
 import '../widgets/delete_spothole_alert_dialog.dart';
 import '../widgets/draggable_scrollable_sheet/draggable_scrollable_sheet_type.dart';
-import '../widgets/marker_info_window.dart';
+import '../widgets/info_window/marker_info_window.dart';
 import '../widgets/modal/register_spothole_modal.dart';
-import '../widgets/spothole_info_window.dart';
+import '../widgets/info_window/spothole_info_window.dart';
 
 class BaseMapController {
   BaseMapController._();

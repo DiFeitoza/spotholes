@@ -5,7 +5,7 @@ import 'package:signals/signals_flutter.dart';
 import '../controllers/base_map_controller.dart';
 import '../package/custom_info_window.dart';
 import '../utilities/constants.dart';
-import '../widgets/button/custom_fab_list.dart';
+import '../widgets/button/custom_floating_action_button_list.dart';
 import '../widgets/search_bar.dart';
 
 class BaseMapPage extends StatefulWidget {
@@ -75,7 +75,7 @@ class BaseMapPageState extends State<BaseMapPage> {
                 CustomInfoWindow(
                   controller: _customInfoWindowControllerSignal.value,
                 ),
-                CustomFABList(),
+                CustomFloatingActionButtonList(),
                 const CustomHeader(),
                 _draggableScrollableSheetSignal.value,
               ],

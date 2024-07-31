@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:spotholes_android/controllers/base_map_controller.dart';
 
 import '../../utilities/custom_icons.dart';
-import 'custom_fab.dart';
+import 'custom_floating_action_button.dart';
 
-class CustomFABList extends StatelessWidget {
-  CustomFABList({super.key});
+class CustomFloatingActionButtonList extends StatelessWidget {
+  CustomFloatingActionButtonList({super.key});
   final _baseMapController = BaseMapController.instance;
 
   @override
@@ -19,19 +19,19 @@ class CustomFABList extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
-            CustomFBA(
+            CustomFloatingActionButton(
                 tooltip: "Adicionar um risco",
                 onPressed: () =>
                     _baseMapController.registerSpotholeModal(context),
                 icon: CustomIcons.potholeAddIcon),
             const SizedBox(height: 10),
-            CustomFBA(
+            CustomFloatingActionButton(
                 tooltip: "Sincronizar os riscos",
                 onPressed: () =>
                     _baseMapController.loadSpotholeMarkers(context),
                 icon: const Icon(Icons.sync)),
             const SizedBox(height: 10),
-            CustomFBA(
+            CustomFloatingActionButton(
               tooltip: "Centralizar a câmera",
               onPressed: _baseMapController.centerView,
               icon: const Icon(Icons.location_searching),

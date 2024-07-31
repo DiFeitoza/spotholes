@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../models/spothole.dart';
-import 'triangle_clipper.dart';
+import '../../models/spothole.dart';
+import '../triangle_clipper.dart';
 
 class SpotholeInfoWindow extends StatefulWidget {
   const SpotholeInfoWindow(
