@@ -54,6 +54,8 @@ class BaseMapPageState extends State<BaseMapPage> {
                         _currentLocationSignal.value!.longitude!),
                     zoom: defaultZoomMap,
                   ),
+                  onCameraIdle: () =>
+                      _customInfoWindowControllerSignal.value.onCameraMove!(),
                   polylines: {
                     Polyline(
                       polylineId: const PolylineId("route"),
@@ -65,12 +67,10 @@ class BaseMapPageState extends State<BaseMapPage> {
                   markers: _markersSignal.value.values.toSet(),
                   onLongPress: _onLongPress,
                   zoomControlsEnabled: false,
-                  onTap: (position) {
-                    _customInfoWindowControllerSignal.value.hideInfoWindow!();
-                  },
-                  onCameraMove: (position) {
-                    _customInfoWindowControllerSignal.value.onCameraMove!();
-                  },
+                  onTap: (position) =>
+                      _customInfoWindowControllerSignal.value.hideInfoWindow!(),
+                  onCameraMove: (position) =>
+                      _customInfoWindowControllerSignal.value.onCameraMove!(),
                 ),
                 CustomInfoWindow(
                   controller: _customInfoWindowControllerSignal.value,
