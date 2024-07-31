@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:signals/signals_flutter.dart';
 
 import '../../controllers/base_map_controller.dart';
-import '../../utilities/custom_snackbar.dart';
 import '../button/custom_button.dart';
 
 class LocationDraggableSheetController {
@@ -21,11 +18,13 @@ class LocationDraggableSheet extends StatefulWidget {
     required this.controller,
     required this.onRegister,
     required this.position,
+    required this.formattedPlacemark,
   });
 
   final LatLng position;
   final Function onRegister;
   final LocationDraggableSheetController controller;
+  final String formattedPlacemark;
 
   @override
   LocationDraggableSheetState createState() => LocationDraggableSheetState();
@@ -40,50 +39,6 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
   @override
   void initState() {
     super.initState();
-  }
-
-  String title = "Alfinete inserido";
-  String firstPlaceDetails = "";
-  // String placesDetails = "";
-
-  formmatedPlacemark(Placemark placemark) {
-    final parts = [
-      placemark.street,
-      placemark.locality,
-      placemark.subLocality,
-      placemark.subAdministrativeArea,
-      placemark.country,
-    ].where((part) => part != '');
-
-    String formatted = parts.join(', ');
-
-    if (placemark.postalCode != null) {
-      formatted += ' - ${placemark.postalCode}';
-    }
-    return formatted;
-  }
-
-  getPlacemarksFromLatLng(LatLng latLng) async {
-    try {
-      await placemarkFromCoordinates(latLng.latitude, latLng.longitude).then(
-        (placemarkList) {
-          setState(() {
-            firstPlaceDetails =
-                'Próximo à ${formmatedPlacemark(placemarkList.first)}';
-          });
-          // for (var placemark in placemarkList) {
-          //   placesDetails += '${formmatedPlaceMark(placemark)}\n';
-          // }
-        },
-      );
-    } catch (e) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        CustomSnackbar.show(
-            context: context,
-            message:
-                'Não foi possível carregar informações, verifique a conexão com a internet');
-      });
-    }
   }
 
   _loadRoute(destinationLocation) {
@@ -106,14 +61,6 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
         label: 'Alertar',
         onPressed: () => _registerSpotholeModal(context),
       ),
-      CustomButton(
-        label: 'Salvar',
-        onPressed: () {},
-      ),
-      CustomButton(
-        label: 'Excluir',
-        onPressed: () {},
-      ),
     ];
   }
 
@@ -123,13 +70,8 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final change = signal(widget.position);
-    effect(() {
-      getPlacemarksFromLatLng(change.value);
-    });
-
     return DraggableScrollableSheet(
-      maxChildSize: 0.8,
+      maxChildSize: 0.5,
       minChildSize: 0.25,
       initialChildSize: 0.25,
       snap: true,
@@ -165,20 +107,13 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
                   ),
                 ),
                 SliverAppBar(
-                  title: Text(title),
+                  title: const Text('Alfinete Inserido'),
                   primary: false,
                   pinned: true,
-                  centerTitle: false,
+                  centerTitle: true,
                   toolbarHeight: 80,
                   leadingWidth: 50,
                   backgroundColor: _canvasColor,
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(16),
-                    child: Text(
-                      firstPlaceDetails,
-                      // maxLines: 1,
-                    ),
-                  ),
                   leading: IconButton(
                     icon: const Icon(Icons.place),
                     onPressed: () {},
@@ -189,6 +124,20 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
                       onPressed: closeDraggable,
                     ),
                   ],
+                  bottom: (widget.formattedPlacemark.isNotEmpty)
+                      ? PreferredSize(
+                          preferredSize: const Size.fromHeight(24),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text(
+                              widget.formattedPlacemark,
+                              style: Theme.of(context).textTheme.bodyLarge,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        )
+                      : null,
                 ),
                 SliverList(
                   delegate: SliverChildListDelegate(
@@ -212,15 +161,16 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
                 const SliverToBoxAdapter(
                   child: Divider(),
                 ),
-                const SliverAppBar(
-                  title: Text("Mais Informações"),
+                SliverAppBar(
+                  title: const Text("Mais Informações"),
+                  backgroundColor: _canvasColor,
                   centerTitle: true,
+                  leading: const Icon(Icons.info),
                 ),
                 SliverList(
                   delegate: SliverChildListDelegate(
                     [
                       ListTile(
-                        leading: const Icon(Icons.place),
                         title: Text(
                           'Localização Geográfica',
                           style: Theme.of(context).textTheme.titleMedium,
@@ -233,12 +183,12 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
                             ),
                             children: [
                               TextSpan(
-                                text: 'Latitude:',
+                                text: 'Latitude: ',
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               TextSpan(text: '${widget.position.latitude}\n'),
                               TextSpan(
-                                text: 'Longitude:',
+                                text: 'Longitude: ',
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                               TextSpan(text: '${widget.position.longitude}\n'),

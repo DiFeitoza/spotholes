@@ -12,11 +12,14 @@ import '../models/spothole.dart';
 import '../package/custom_info_window.dart';
 import '../package/google_places_flutter/model/place_details.dart'
     hide Location;
+import '../services/geocoding_service.dart';
 import '../services/service_locator.dart';
 import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
+import '../utilities/custom_snackbar.dart';
 import '../widgets/delete_spothole_alert_dialog.dart';
 import '../widgets/draggable_scrollable_sheet/draggable_scrollable_sheet_type.dart';
+import '../widgets/marker_info_window.dart';
 import '../widgets/modal/register_spothole_modal.dart';
 import '../widgets/spothole_info_window.dart';
 
@@ -38,6 +41,8 @@ class BaseMapController {
   late Signal draggableScrollableSheetSignal = signal(
     DraggableScrollableSheetTypes.initial.widget,
   );
+
+  final _geocodingService = GeocodingService.instance;
 
   final _location = Location();
 
@@ -71,20 +76,24 @@ class BaseMapController {
 
   void loadCurrentLocation() async {
     _currentLocationSignal.value = await _location.getLocation();
-    loadCurrentLocationMark(_currentLocationSignal.value);
+    loadCurrentLocationMark();
     _location.onLocationChanged.listen((newLoc) {
       _currentLocationSignal.value = newLoc;
-      loadCurrentLocationMark(newLoc);
+      loadCurrentLocationMark();
     });
     _googleMapController = await _googleMapControllerCompleter.future;
     updateCameraGoogleMapsController(currentLocationLatLng);
   }
 
-  void loadCurrentLocationMark(newLoc) async {
+  void loadCurrentLocationMark() {
     final newMarker = Marker(
       markerId: const MarkerId("currentLocation"),
       icon: CustomIcons.currentLocationIcon,
       position: currentLocationLatLng,
+      onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
+          const MarkerInfoWindow(
+              title: 'Localização', textContent: 'Você está aqui!'),
+          currentLocationLatLng),
     );
     _markersSignal.value['currentLocationMarker'] = newMarker;
   }
@@ -105,12 +114,15 @@ class BaseMapController {
   void loadPlaceLocation(context, PlaceDetails placeDetails) {
     final placeLocation = placeDetails.result!.geometry!.location!;
     final position = LatLng(placeLocation.lat!, placeLocation.lng!);
+
     _markersSignal.value['selectedPlace'] = Marker(
       markerId: MarkerId(position.toString()),
       position: position,
-      infoWindow: InfoWindow(
-        title: placeDetails.result!.name,
-      ),
+      onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
+          MarkerInfoWindow(
+              title: 'Resultado da Busca',
+              textContent: placeDetails.result!.name),
+          position),
     );
     updateCameraGoogleMapsController(position);
     changeDraggableSheet(DraggableScrollableSheetTypes.place(
@@ -122,6 +134,7 @@ class BaseMapController {
   }
 
   void closeDraggableSheet(String key) {
+    _customInfoWindowControllerSignal.value.hideInfoWindow!();
     removeMarkerByKey(key);
     changeDraggableSheet(DraggableScrollableSheetTypes.initial);
     centerView();
@@ -282,18 +295,39 @@ class BaseMapController {
     );
   }
 
-  void onLongPress(BuildContext context, LatLng position) {
+  void onLongPress(BuildContext context, LatLng position) async {
+    String windowInfo = 'Alfinete inserido';
+    String formattedPlacemark = '';
+    _customInfoWindowControllerSignal.value.hideInfoWindow!();
+    updateCameraGoogleMapsController(position);
+    try {
+      windowInfo = await _geocodingService
+          .getFirstPlacemarkFormattedFromLatLng(position);
+      formattedPlacemark = 'Próximo de $windowInfo';
+    } catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) {
+          CustomSnackbar.show(
+              context: context,
+              message:
+                  'Não foi possível carregar informações, verifique a conexão com a internet');
+        },
+      );
+    }
     _markersSignal.value['longPressed'] = Marker(
       markerId: MarkerId(position.toString()),
       position: position,
-      infoWindow: InfoWindow(
-        title: '${position.latitude}, ${position.longitude}',
-      ),
+      onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
+          MarkerInfoWindow(
+            title: 'Local Aproximado',
+            textContent: windowInfo,
+          ),
+          position),
     );
-    updateCameraGoogleMapsController(position);
     changeDraggableSheet(
       DraggableScrollableSheetTypes.location(
         position: position,
+        formattedPlacemark: formattedPlacemark,
         onRegister: () => registerSpotholeModal(context, position: position),
       ),
     );
