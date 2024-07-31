@@ -42,7 +42,7 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
   }
 
   _loadRoute(destinationLocation) {
-    _baseMapController.removeMarkerByKey('selectedPlace');
+    _baseMapController.removeMarkerByKey('longPressed');
     _baseMapController.loadRoute(destinationLocation);
   }
 

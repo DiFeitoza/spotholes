@@ -9,7 +9,7 @@ class MarkerInfoWindow extends StatefulWidget {
     required this.title,
   });
 
-  final String? textContent;
+  final String textContent;
   final String title;
 
   @override
@@ -39,7 +39,7 @@ class _MarkerInfoWindowState extends State<MarkerInfoWindow> {
                 ),
                 const SizedBox(height: 8.0),
                 Text(
-                  widget.textContent != null ? widget.textContent! : "Marcador",
+                  widget.textContent,
                   style: Theme.of(context)
                       .textTheme
                       .bodyLarge!

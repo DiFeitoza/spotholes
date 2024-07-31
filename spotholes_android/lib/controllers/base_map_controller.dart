@@ -82,7 +82,7 @@ class BaseMapController {
       loadCurrentLocationMark();
     });
     _googleMapController = await _googleMapControllerCompleter.future;
-    updateCameraGoogleMapsController(currentLocationLatLng);
+    centerView();
   }
 
   void loadCurrentLocationMark() {
@@ -114,14 +114,15 @@ class BaseMapController {
   void loadPlaceLocation(context, PlaceDetails placeDetails) {
     final placeLocation = placeDetails.result!.geometry!.location!;
     final position = LatLng(placeLocation.lat!, placeLocation.lng!);
-
     _markersSignal.value['selectedPlace'] = Marker(
       markerId: MarkerId(position.toString()),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
       position: position,
       onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
           MarkerInfoWindow(
               title: 'Resultado da Busca',
-              textContent: placeDetails.result!.name),
+              textContent: placeDetails.result!.name ??
+                  'Latitude: ${placeLocation.lat!}\rLongitude: ${placeLocation.lng!}'),
           position),
     );
     updateCameraGoogleMapsController(position);
@@ -158,7 +159,8 @@ class BaseMapController {
               .map((point) => LatLng(point.latitude, point.longitude))
               .toList();
           _routePolylineCoordinates.value = newList;
-          loadRouteMarkers(sourceLocation, destinationLocation);
+          loadRouteMarkers(_routePolylineCoordinates.value.first,
+              _routePolylineCoordinates.value.last);
         }
       },
     );
@@ -273,8 +275,7 @@ class BaseMapController {
     spothole.type = type;
     addSpotholeMarker(context, key, spothole);
     markersSignal.value[key].onTap!();
-    final zoom = await _googleMapController!.getZoomLevel();
-    updateCameraGoogleMapsController(spothole.position, zoom);
+    updateCameraGoogleMapsController(spothole.position);
     spotholeRef.set(spothole.toJson());
   }
 
@@ -296,7 +297,8 @@ class BaseMapController {
   }
 
   void onLongPress(BuildContext context, LatLng position) async {
-    String windowInfo = 'Alfinete inserido';
+    String windowInfo =
+        'Latitude: ${position.latitude}\rLongitude: ${position.longitude}';
     String formattedPlacemark = '';
     _customInfoWindowControllerSignal.value.hideInfoWindow!();
     updateCameraGoogleMapsController(position);
