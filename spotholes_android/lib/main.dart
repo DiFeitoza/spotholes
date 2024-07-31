@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import '../config/environment_config.dart';
@@ -18,6 +19,9 @@ void main() async {
   );
   setupDependencies();
   CustomIcons.setupCustomIcons();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
   runApp(const MyApp());
   FlutterNativeSplash.remove();
 }
