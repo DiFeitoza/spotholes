@@ -10,15 +10,24 @@ import 'package:signals/signals_flutter.dart';
 import '../config/environment_config.dart';
 import '../models/spothole.dart';
 import '../package/custom_info_window.dart';
+import '../package/google_places_flutter/model/place_details.dart'
+    hide Location;
+import '../services/geocoding_service.dart';
 import '../services/service_locator.dart';
 import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
+import '../utilities/custom_snackbar.dart';
 import '../widgets/delete_spothole_alert_dialog.dart';
-import '../widgets/location_marker_modal.dart';
-import '../widgets/register_spothole_modal.dart';
-import '../widgets/spothole_info_window.dart';
+import '../widgets/draggable_scrollable_sheet/draggable_scrollable_sheet_type.dart';
+import '../widgets/info_window/marker_info_window.dart';
+import '../widgets/modal/register_spothole_modal.dart';
+import '../widgets/info_window/spothole_info_window.dart';
 
 class BaseMapController {
+  BaseMapController._();
+  static final BaseMapController _instance = BaseMapController._();
+  static BaseMapController get instance => _instance;
+
   final databaseReference = getIt<DatabaseReference>();
   late final dataBaseSpotholesRef = databaseReference.child('spotholes');
 
@@ -26,6 +35,14 @@ class BaseMapController {
   final _googleMapControllerCompleter = Completer();
   final _customInfoWindowControllerSignal =
       Signal<CustomInfoWindowController>(CustomInfoWindowController());
+  final _textEditingController = TextEditingController();
+  final _searchBarFocusNode = FocusNode();
+
+  late Signal draggableScrollableSheetSignal = signal(
+    DraggableScrollableSheetTypes.initial.widget,
+  );
+
+  final _geocodingService = GeocodingService.instance;
 
   final _location = Location();
 
@@ -35,10 +52,16 @@ class BaseMapController {
 
   get markersSignal => _markersSignal;
   get currentLocationSignal => _currentLocationSignal;
-  get routePolylineCoordinates => _routePolylineCoordinates;
+  get routePolylineCoordinates => _routePolylineCoordinates.value;
+  get textEditingController => _textEditingController;
+  get searchBarFocusNode => _searchBarFocusNode;
   get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
   get currentLocationLatLng => LatLng(_currentLocationSignal.value!.latitude!,
       _currentLocationSignal.value!.longitude!);
+
+  String currentLocationLatLngURLPattern() =>
+      "${_currentLocationSignal.value!.latitude!.toString()}"
+      "%2C${_currentLocationSignal.value!.longitude!.toString()}";
 
   void updateCameraGoogleMapsController(position, [zoom = defaultZoomMap]) {
     _googleMapController!.animateCamera(
@@ -53,20 +76,24 @@ class BaseMapController {
 
   void loadCurrentLocation() async {
     _currentLocationSignal.value = await _location.getLocation();
-    loadCurrentLocationMark(_currentLocationSignal.value);
+    loadCurrentLocationMark();
     _location.onLocationChanged.listen((newLoc) {
       _currentLocationSignal.value = newLoc;
-      loadCurrentLocationMark(newLoc);
+      loadCurrentLocationMark();
     });
     _googleMapController = await _googleMapControllerCompleter.future;
-    updateCameraGoogleMapsController(currentLocationLatLng);
+    centerView();
   }
 
-  void loadCurrentLocationMark(newLoc) async {
+  void loadCurrentLocationMark() {
     final newMarker = Marker(
       markerId: const MarkerId("currentLocation"),
       icon: CustomIcons.currentLocationIcon,
       position: currentLocationLatLng,
+      onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
+          const MarkerInfoWindow(
+              title: 'Localização', textContent: 'Você está aqui!'),
+          currentLocationLatLng),
     );
     _markersSignal.value['currentLocationMarker'] = newMarker;
   }
@@ -80,7 +107,42 @@ class BaseMapController {
     updateCameraGoogleMapsController(currentLocationLatLng);
   }
 
-  Future loadRoute(sourceLocation, destinationLocation) async {
+  changeDraggableSheet(DraggableScrollableSheetType type) {
+    draggableScrollableSheetSignal.value = type.widget;
+  }
+
+  void loadPlaceLocation(context, PlaceDetails placeDetails) {
+    final placeLocation = placeDetails.result!.geometry!.location!;
+    final position = LatLng(placeLocation.lat!, placeLocation.lng!);
+    _markersSignal.value['selectedPlace'] = Marker(
+      markerId: MarkerId(position.toString()),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+      position: position,
+      onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
+          MarkerInfoWindow(
+              title: 'Resultado da Busca',
+              textContent: placeDetails.result!.name ??
+                  'Latitude: ${placeLocation.lat!}\rLongitude: ${placeLocation.lng!}'),
+          position),
+    );
+    updateCameraGoogleMapsController(position);
+    changeDraggableSheet(DraggableScrollableSheetTypes.place(
+        placeDetails: placeDetails, position: position));
+  }
+
+  void removeMarkerByKey(key) {
+    markersSignal.value.remove(key);
+  }
+
+  void closeDraggableSheet(String key) {
+    _customInfoWindowControllerSignal.value.hideInfoWindow!();
+    removeMarkerByKey(key);
+    changeDraggableSheet(DraggableScrollableSheetTypes.initial);
+    centerView();
+  }
+
+  Future loadRoute(destinationLocation, {sourceLocation}) async {
+    sourceLocation ??= currentLocationLatLng;
     final polylinePoints = PolylinePoints();
 
     await polylinePoints
@@ -93,12 +155,12 @@ class BaseMapController {
         .then(
       (response) {
         if (response.points.isNotEmpty) {
-          for (var point in response.points) {
-            _routePolylineCoordinates.value.add(
-              LatLng(point.latitude, point.longitude),
-            );
-          }
-          loadRouteMarkers(sourceLocation, destinationLocation);
+          final newList = response.points
+              .map((point) => LatLng(point.latitude, point.longitude))
+              .toList();
+          _routePolylineCoordinates.value = newList;
+          loadRouteMarkers(_routePolylineCoordinates.value.first,
+              _routePolylineCoordinates.value.last);
         }
       },
     );
@@ -124,7 +186,7 @@ class BaseMapController {
   void deleteSpothole(String spotholeId) {
     dataBaseSpotholesRef.child(spotholeId).remove();
     _customInfoWindowControllerSignal.value.hideInfoWindow!();
-    markersSignal.value.remove(spotholeId);
+    removeMarkerByKey(spotholeId);
   }
 
   void showDeleteSpotholeAlertDialog(context, String spotholeId) {
@@ -149,7 +211,8 @@ class BaseMapController {
       onTap: () {
         _customInfoWindowControllerSignal.value.addInfoWindow!(
           SpotholeInfoWindow(
-            editSpothole: () => editSpotholeModal(context, key, spothole.category, spothole.type),
+            editSpothole: () => editSpotholeModal(
+                context, key, spothole.category, spothole.type),
             showDeleteSpotholeAlertDialog: () =>
                 showDeleteSpotholeAlertDialog(context, key),
             spothole: spothole,
@@ -186,7 +249,8 @@ class BaseMapController {
     addSpotholeMarker(context, newSpotHoleRef.key!, newSpothole);
   }
 
-  void registerSpotholeModal(context, position) {
+  void registerSpotholeModal(context, {LatLng? position}) {
+    final latLng = position ?? currentLocationLatLng;
     showModalBottomSheet(
       context: context,
       builder: (builder) {
@@ -194,7 +258,7 @@ class BaseMapController {
           title: "Para alertar um risco, selecione:",
           textOnRegisterButton: "Adicionar",
           onRegister: (riskCategory, type) =>
-              registerSpothole(context, position, riskCategory, type),
+              registerSpothole(context, latLng, riskCategory, type),
         );
       },
     );
@@ -211,8 +275,7 @@ class BaseMapController {
     spothole.type = type;
     addSpotholeMarker(context, key, spothole);
     markersSignal.value[key].onTap!();
-    final zoom = await _googleMapController!.getZoomLevel();
-    updateCameraGoogleMapsController(spothole.position, zoom);
+    updateCameraGoogleMapsController(spothole.position);
     spotholeRef.set(spothole.toJson());
   }
 
@@ -233,20 +296,42 @@ class BaseMapController {
     );
   }
 
-  void onLongPress(BuildContext context, LatLng position) {
+  void onLongPress(BuildContext context, LatLng position) async {
+    String windowInfo =
+        'Latitude: ${position.latitude}\rLongitude: ${position.longitude}';
+    String formattedPlacemark = '';
+    _customInfoWindowControllerSignal.value.hideInfoWindow!();
+    updateCameraGoogleMapsController(position);
+    try {
+      windowInfo = await _geocodingService
+          .getFirstPlacemarkFormattedFromLatLng(position);
+      formattedPlacemark = 'Próximo de $windowInfo';
+    } catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) {
+          CustomSnackbar.show(
+              context: context,
+              message:
+                  'Não foi possível carregar informações, verifique a conexão com a internet');
+        },
+      );
+    }
     _markersSignal.value['longPressed'] = Marker(
       markerId: MarkerId(position.toString()),
       position: position,
+      onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
+          MarkerInfoWindow(
+            title: 'Local Aproximado',
+            textContent: windowInfo,
+          ),
+          position),
     );
-    updateCameraGoogleMapsController(position);
-    showModalBottomSheet(
-      context: context,
-      builder: (builder) {
-        return LocationMarkerModal(
-          position: position,
-          onRegister: () => registerSpotholeModal(context, position),
-        );
-      },
+    changeDraggableSheet(
+      DraggableScrollableSheetTypes.location(
+        position: position,
+        formattedPlacemark: formattedPlacemark,
+        onRegister: () => registerSpotholeModal(context, position: position),
+      ),
     );
   }
 }

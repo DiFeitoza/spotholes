@@ -1,11 +1,13 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import '../config/environment_config.dart';
 import '../pages/base_map_page.dart';
 import '../services/service_locator.dart';
 import '../utilities/custom_icons.dart';
+import '../utilities/dark_mode_context_extension.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -17,6 +19,9 @@ void main() async {
   );
   setupDependencies();
   CustomIcons.setupCustomIcons();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
   runApp(const MyApp());
   FlutterNativeSplash.remove();
 }
@@ -27,6 +32,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Spotholes',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
@@ -37,7 +43,15 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const BaseMapPage(),
+      home: Scaffold(
+        backgroundColor: context.isDarkMode ? Colors.black : Colors.white,
+        body: SafeArea(
+          child: Container(
+            color: context.isDarkMode ? Colors.white : Colors.black,
+            child: const BaseMapPage(),
+          ),
+        ),
+      ),
     );
   }
 }
