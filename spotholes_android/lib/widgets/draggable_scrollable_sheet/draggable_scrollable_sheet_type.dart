@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:spotholes_android/package/google_places_flutter/model/place_details.dart';
-import 'package:spotholes_android/widgets/draggable_scrollable_sheet/route_draggable_sheet.dart';
 
 import 'location_draggable_sheet.dart';
 import 'main_draggable_sheet.dart';
@@ -43,13 +42,18 @@ class DraggableScrollableSheetTypes {
     );
   }
 
-  static DraggableScrollableSheetType route(
-      {required LatLng destinationLocation}) {
-    return DraggableScrollableSheetType(
-      widget: RouteDraggableSheet(
-        controller: RouteDraggableSheetController(),
-        destinationLocation: destinationLocation,
-      ),
-    );
-  }
+  // TODO por enquanto, não se faz necessário alternância de Draggable na tela de rotas, ou, o uso do Draggable de rotas na base_map_page.
+  // static DraggableScrollableSheetType route(
+  //     {required LatLng destinationLocation,
+  //     String? formattedPlacemark,
+  //     PlaceDetails? placeDetails}) {
+  //   return DraggableScrollableSheetType(
+  //     widget: RouteDraggableSheet(
+  //       controller: RouteDraggableSheetController(),
+  //       destinationLocation: destinationLocation,
+  //       formattedPlacemark: formattedPlacemark,
+  //       placeDetails: placeDetails,
+  //     ),
+  //   );
+  // }
 }

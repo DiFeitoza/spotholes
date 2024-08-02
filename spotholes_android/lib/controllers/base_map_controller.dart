@@ -2,12 +2,11 @@ import 'dart:async';
 
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:signals/signals_flutter.dart';
 
-import '../config/environment_config.dart';
 import '../models/spothole.dart';
 import '../package/custom_info_window.dart';
 import '../package/google_places_flutter/model/place_details.dart'
@@ -48,11 +47,9 @@ class BaseMapController {
 
   final _markersSignal = Signal<Map<String, Marker>>({});
   final _currentLocationSignal = Signal<LocationData?>(null);
-  final _routePolylineCoordinates = Signal<List<LatLng>>([]);
 
   get markersSignal => _markersSignal;
   get currentLocationSignal => _currentLocationSignal;
-  get routePolylineCoordinates => _routePolylineCoordinates.value;
   get textEditingController => _textEditingController;
   get searchBarFocusNode => _searchBarFocusNode;
   get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
@@ -139,48 +136,6 @@ class BaseMapController {
     removeMarkerByKey(key);
     changeDraggableSheet(DraggableScrollableSheetTypes.initial);
     centerView();
-  }
-
-  Future loadRoute(destinationLocation, {sourceLocation}) async {
-    sourceLocation ??= currentLocationLatLng;
-    final polylinePoints = PolylinePoints();
-
-    await polylinePoints
-        .getRouteBetweenCoordinates(
-      EnvironmentConfig.googleApiKey!,
-      PointLatLng(sourceLocation!.latitude!, sourceLocation!.longitude!),
-      PointLatLng(
-          destinationLocation!.latitude!, destinationLocation!.longitude!),
-    )
-        .then(
-      (response) {
-        if (response.points.isNotEmpty) {
-          final newList = response.points
-              .map((point) => LatLng(point.latitude, point.longitude))
-              .toList();
-          _routePolylineCoordinates.value = newList;
-          loadRouteMarkers(_routePolylineCoordinates.value.first,
-              _routePolylineCoordinates.value.last);
-        }
-      },
-    );
-  }
-
-  void loadRouteMarkers(sourceLocation, destinationLocation) {
-    Marker sourceRouteMarker = Marker(
-      markerId: const MarkerId("sourceRoute"),
-      icon: CustomIcons.sourceIcon,
-      position: sourceLocation,
-    );
-
-    Marker destinationRouteMarker = Marker(
-      markerId: const MarkerId("destinationRoute"),
-      icon: CustomIcons.destinationIcon,
-      position: destinationLocation,
-    );
-
-    _markersSignal.value["sourceRouteMarker"] = sourceRouteMarker;
-    _markersSignal.value['destinationRouteMarker'] = destinationRouteMarker;
   }
 
   void deleteSpothole(String spotholeId) {

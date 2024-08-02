@@ -2,12 +2,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:spotholes_android/utilities/app_routes.dart';
 
 import '../config/environment_config.dart';
-import '../pages/base_map_page.dart';
 import '../services/service_locator.dart';
 import '../utilities/custom_icons.dart';
-import '../utilities/dark_mode_context_extension.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -43,15 +42,8 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: Scaffold(
-        backgroundColor: context.isDarkMode ? Colors.black : Colors.white,
-        body: SafeArea(
-          child: Container(
-            color: context.isDarkMode ? Colors.white : Colors.black,
-            child: const BaseMapPage(),
-          ),
-        ),
-      ),
+      initialRoute: AppRoutes.baseMap,
+      routes: AppRoutes.routes,
     );
   }
 }
