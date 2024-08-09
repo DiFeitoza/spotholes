@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:signals/signals_flutter.dart';
 import 'package:spotholes_android/controllers/route_controller.dart';
-import 'package:spotholes_android/package/google_places_flutter/model/place_details.dart';
+import 'package:spotholes_android/utilities/maneuver_icons.dart';
 
+import '../../utilities/custom_icons.dart';
 import '../button/custom_button.dart';
 
 class RouteDraggableSheetController {
@@ -14,16 +17,13 @@ class RouteDraggableSheetController {
 }
 
 class RouteDraggableSheet extends StatefulWidget {
-  const RouteDraggableSheet(
-      {super.key,
-      required this.controller,
-      required this.destinationLocation,
-      this.placeDetails,
-      this.formattedPlacemark});
+  const RouteDraggableSheet({
+    super.key,
+    required this.controller,
+    required this.destinationLocation,
+  });
 
   final RouteDraggableSheetController controller;
-  final PlaceDetails? placeDetails;
-  final String? formattedPlacemark;
   final LatLng destinationLocation;
 
   @override
@@ -32,20 +32,46 @@ class RouteDraggableSheet extends StatefulWidget {
 
 class RouteDraggableSheetState extends State<RouteDraggableSheet> {
   final _routeController = RouteController.instance;
-  late final _polylineResponse = _routeController.polylineResponseSignal.value;
-  late final distance = _polylineResponse.distance;
-  late final duration = _polylineResponse.duration;
-  late final startAddress = _polylineResponse.startAddress;
-  late final endAddress = _polylineResponse.endAddress;
-  late final overviewPolyline = _polylineResponse.overviewPolyline;
+  final scrollController = ScrollController();
 
-  final ScrollController scrollController = ScrollController();
+  final draggableController = DraggableScrollableController();
+  final _draggableExtentNotifier = signal(0.0);
+  final _minDraggableChildSize = 0.28;
+  final _maxDraggableChildSize = 0.6;
+  final _intermediateDraggableChildSize = 0.4;
+  int? _selectedIndex;
+
   late final _canvasColor = Theme.of(context).canvasColor;
-  late final Result placeDetailsResult = widget.placeDetails!.result!;
+
+  late final _directionResult = _routeController.directionResult;
+  late final _route = _directionResult.value.routes![0];
+  late final _leg = _route.legs![0];
+  late final _steps = _leg.steps!;
 
   @override
   void initState() {
     super.initState();
+    draggableController.addListener(_updateExtent);
+  }
+
+  void _updateExtent() {
+    _draggableExtentNotifier.value = draggableController.size;
+  }
+
+  void changeSizeDraggableScrollableSheet(double size) =>
+      draggableController.animateTo(
+        size,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+      );
+
+  @override
+  void dispose() {
+    _routeController.dispose();
+    draggableController.removeListener(_updateExtent);
+    draggableController.dispose();
+    _draggableExtentNotifier.dispose();
+    super.dispose();
   }
 
   List<Widget> _horizontalListButtons(BuildContext context, position) {
@@ -56,117 +82,265 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
         onPressed: () => {},
       ),
       CustomButton(
-        label: 'Voltar',
+        label: 'Centralizar',
         bgColor: Colors.tealAccent.shade400,
-        onPressed: () => {},
+        onPressed: () => {
+          _routeController.centerViewRoute(),
+          changeSizeDraggableScrollableSheet(_minDraggableChildSize),
+        },
       ),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      maxChildSize: 0.6,
-      minChildSize: 0.28,
-      initialChildSize: 0.28,
-      snap: true,
-      snapSizes: const [0.28, 0.6],
-      builder: (BuildContext context, scrollController) {
-        return Container(
-          clipBehavior: Clip.hardEdge,
-          decoration: BoxDecoration(
-            color: _canvasColor,
-            border: Border.all(width: 0.5),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(25),
-              topRight: Radius.circular(25),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: CustomScrollView(
-              controller: scrollController,
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Center(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).hintColor,
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(10)),
-                      ),
-                      height: 4,
-                      width: 40,
-                      margin: const EdgeInsets.symmetric(vertical: 10),
+    return Watch(
+      (context) => Column(
+        children: [
+          Expanded(
+            child: DraggableScrollableSheet(
+              controller: draggableController,
+              maxChildSize: _maxDraggableChildSize,
+              minChildSize: _minDraggableChildSize,
+              initialChildSize: _minDraggableChildSize,
+              snap: true,
+              snapSizes: [_minDraggableChildSize, _maxDraggableChildSize],
+              builder: (BuildContext context, scrollController) {
+                return Container(
+                  clipBehavior: Clip.hardEdge,
+                  decoration: BoxDecoration(
+                    color: _canvasColor,
+                    border: Border.all(width: 0.5),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(25),
+                      topRight: Radius.circular(25),
                     ),
                   ),
-                ),
-                SliverAppBar(
-                  title: const Text('Detalhes da Rota'),
-                  // title: Text(placeDetailsResult.name!),
-                  primary: false,
-                  pinned: true,
-                  centerTitle: true,
-                  toolbarHeight: 80,
-                  backgroundColor: _canvasColor,
-                  // leadingWidth: 50,
-                  // leading: IconButton(
-                  //   icon: Image.network(
-                  //     placeDetailsResult.icon!,
-                  //     fit: BoxFit.contain,
-                  //   ),
-                  //   onPressed: () {},
-                  // ),
-                  actions: [
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(35),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                      child: Text(
-                        '$duration ($distance)',
-                        // placeDetailsResult.formattedAddress!,
-                        style: Theme.of(context).textTheme.titleLarge,
-                        textAlign: TextAlign.left,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ),
-                SliverList(
-                  delegate: SliverChildListDelegate(
-                    [
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            height: 60.0,
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              children: _horizontalListButtons(
-                                  context, widget.destinationLocation),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: CustomScrollView(
+                      controller: scrollController,
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Center(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).hintColor,
+                                borderRadius:
+                                    const BorderRadius.all(Radius.circular(10)),
+                              ),
+                              height: 4,
+                              width: 40,
+                              margin: const EdgeInsets.symmetric(vertical: 10),
                             ),
-                          )
-                        ],
-                      ),
-                      Text(
-                        'Origem: $startAddress\n➞\nDestino: $endAddress',
-                        style: Theme.of(context).textTheme.bodyLarge,
-                        // '- Overview Polyline: $overviewPolyline\n',
-                      ),
-                    ],
+                          ),
+                        ),
+                        SliverAppBar(
+                          title: const Text('Etapas da Rota'),
+                          primary: false,
+                          pinned: true,
+                          centerTitle: true,
+                          backgroundColor: _canvasColor,
+                          leading: Watch.builder(
+                            builder: (context) => IconButton(
+                              icon: Icon(
+                                _draggableExtentNotifier.value <
+                                        _maxDraggableChildSize
+                                    ? Icons.expand_less
+                                    : Icons.expand_more,
+                              ),
+                              onPressed: () {
+                                if (_draggableExtentNotifier.value <
+                                    _maxDraggableChildSize) {
+                                  changeSizeDraggableScrollableSheet(
+                                    _maxDraggableChildSize,
+                                  );
+                                } else {
+                                  changeSizeDraggableScrollableSheet(
+                                    _minDraggableChildSize,
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                          actions: [
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          ],
+                        ),
+                        SliverList(
+                          delegate: SliverChildListDelegate(
+                            [
+                              // // Text(
+                              // //   _routeAndStepsListSignal.value.toString(),
+                              // // ),
+                              // const SizedBox(
+                              //   height: 8,
+                              // ),
+                              // Container(
+                              //   padding: const EdgeInsets.all(8),
+                              //   decoration: BoxDecoration(
+                              //     color: Theme.of(context).focusColor,
+                              //     border: Border.all(
+                              //       color: Colors.black,
+                              //       width: 0.5,
+                              //     ),
+                              //   ),
+                              //   child: Text(
+                              //     'Etapas da Rota',
+                              //     style: Theme.of(context).textTheme.titleLarge,
+                              //     textAlign: TextAlign.center,
+                              //   ),
+                              // ),
+                              ListView.separated(
+                                physics: const NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                itemCount: _steps.length + 2,
+                                separatorBuilder: (context, index) {
+                                  return const Divider();
+                                },
+                                itemBuilder: (context, index) {
+                                  if (index == 0) {
+                                    return ListTile(
+                                      title: Text(
+                                        'Partida: ${_leg.startAddress!}',
+                                      ),
+                                      leading: SizedBox(
+                                        height: 35,
+                                        width: 35,
+                                        child: CustomIcons.sourceIconAsset,
+                                      ),
+                                      selected: _selectedIndex == 0,
+                                      tileColor: _selectedIndex == 0
+                                          ? Colors.amber
+                                          : null,
+                                      selectedColor: Theme.of(context)
+                                          .listTileTheme
+                                          .selectedColor,
+                                      selectedTileColor: Theme.of(context)
+                                          .listTileTheme
+                                          .selectedTileColor,
+                                      onTap: () => {
+                                        setState(() {
+                                          _selectedIndex = 0;
+                                        }),
+                                        changeSizeDraggableScrollableSheet(
+                                            _intermediateDraggableChildSize),
+                                        _routeController
+                                            .updateCamera(_leg.startLocation!),
+                                      },
+                                    );
+                                  } else if (index == _steps.length + 1) {
+                                    return ListTile(
+                                      selected:
+                                          _selectedIndex == _steps.length + 1,
+                                      tileColor:
+                                          _selectedIndex == _steps.length + 1
+                                              ? Colors.amber
+                                              : null,
+                                      selectedColor: Theme.of(context)
+                                          .listTileTheme
+                                          .selectedColor,
+                                      selectedTileColor: Theme.of(context)
+                                          .listTileTheme
+                                          .selectedTileColor,
+                                      onTap: () => {
+                                        setState(() {
+                                          _selectedIndex = index;
+                                        }),
+                                        changeSizeDraggableScrollableSheet(
+                                            _intermediateDraggableChildSize),
+                                        _routeController
+                                            .updateCamera(_leg.endLocation!),
+                                      },
+                                      title: Text(
+                                        'Destino: ${_leg.endAddress!}',
+                                      ),
+                                      leading: SizedBox(
+                                        height: 35,
+                                        width: 35,
+                                        child: CustomIcons.destinationIconAsset,
+                                      ),
+                                    );
+                                  } else {
+                                    final step = _steps[index - 1];
+                                    final maneuver =
+                                        step.maneuver ?? 'straight';
+                                    final icon = maneuverIcons[maneuver] ??
+                                        Icons.directions;
+                                    return ListTile(
+                                      selected: _selectedIndex == index,
+                                      tileColor: _selectedIndex == index
+                                          ? Colors.amber
+                                          : null,
+                                      selectedColor: Theme.of(context)
+                                          .listTileTheme
+                                          .selectedColor,
+                                      selectedTileColor: Theme.of(context)
+                                          .listTileTheme
+                                          .selectedTileColor,
+                                      onTap: () => {
+                                        setState(() {
+                                          _selectedIndex = index;
+                                        }),
+                                        changeSizeDraggableScrollableSheet(
+                                            _intermediateDraggableChildSize),
+                                        maneuver == 'straight'
+                                            ? _routeController
+                                                .newCameraLatLngBoundsFromStep(
+                                                step,
+                                              )
+                                            : _routeController.updateCamera(
+                                                step.startLocation!),
+                                      },
+                                      leading: Icon(
+                                        icon,
+                                        size: 35,
+                                      ),
+                                      title: Html(
+                                        data: step.instructions!,
+                                        style: {
+                                          "body": Style(margin: Margins.zero),
+                                        },
+                                      ),
+                                      subtitle: Html(
+                                        data:
+                                            'Distância: ${step.distance!.text}',
+                                        style: {
+                                          "body": Style(margin: Margins.zero),
+                                        },
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
-        );
-      },
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 60.0,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: _horizontalListButtons(
+                      context, widget.destinationLocation),
+                ),
+              )
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

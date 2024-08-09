@@ -30,6 +30,13 @@ class CustomIcons {
       height: 70);
   static Image potholeAddIcon =
       Image.asset('assets/images/pothole_add_icon.png');
+  static Image sourceIconAsset = Image.asset('assets/images/source_route.png');
+  static Image destinationIconAsset = Image.asset(
+    'assets/images/end_route.png',
+    height: 10,
+    width: 10,
+    fit: BoxFit.cover,
+  );
 
   static setupCustomIcons() {
     ImageSizeAdjust.getCustomIcon('assets/images/source_route.png', 110)
