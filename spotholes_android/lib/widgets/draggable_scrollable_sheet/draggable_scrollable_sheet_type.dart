@@ -41,19 +41,4 @@ class DraggableScrollableSheetTypes {
       ),
     );
   }
-
-  // TODO por enquanto, não se faz necessário alternância de Draggable na tela de rotas, ou, o uso do Draggable de rotas na base_map_page.
-  // static DraggableScrollableSheetType route(
-  //     {required LatLng destinationLocation,
-  //     String? formattedPlacemark,
-  //     PlaceDetails? placeDetails}) {
-  //   return DraggableScrollableSheetType(
-  //     widget: RouteDraggableSheet(
-  //       controller: RouteDraggableSheetController(),
-  //       destinationLocation: destinationLocation,
-  //       formattedPlacemark: formattedPlacemark,
-  //       placeDetails: placeDetails,
-  //     ),
-  //   );
-  // }
 }

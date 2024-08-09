@@ -173,27 +173,6 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                         SliverList(
                           delegate: SliverChildListDelegate(
                             [
-                              // // Text(
-                              // //   _routeAndStepsListSignal.value.toString(),
-                              // // ),
-                              // const SizedBox(
-                              //   height: 8,
-                              // ),
-                              // Container(
-                              //   padding: const EdgeInsets.all(8),
-                              //   decoration: BoxDecoration(
-                              //     color: Theme.of(context).focusColor,
-                              //     border: Border.all(
-                              //       color: Colors.black,
-                              //       width: 0.5,
-                              //     ),
-                              //   ),
-                              //   child: Text(
-                              //     'Etapas da Rota',
-                              //     style: Theme.of(context).textTheme.titleLarge,
-                              //     textAlign: TextAlign.center,
-                              //   ),
-                              // ),
                               ListView.separated(
                                 physics: const NeverScrollableScrollPhysics(),
                                 shrinkWrap: true,
@@ -302,7 +281,13 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                       title: Html(
                                         data: step.instructions!,
                                         style: {
-                                          "body": Style(margin: Margins.zero),
+                                          "body": Style(
+                                            fontStyle: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium!
+                                                .fontStyle,
+                                            margin: Margins.zero,
+                                          ),
                                         },
                                       ),
                                       subtitle: Html(

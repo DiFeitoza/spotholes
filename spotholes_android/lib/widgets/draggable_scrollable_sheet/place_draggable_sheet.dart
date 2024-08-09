@@ -34,11 +34,6 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
   final _baseMapController = BaseMapController.instance;
   late final _canvasColor = Theme.of(context).canvasColor;
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
   _loadRoute(position) {
     Navigator.of(context).pushNamed(
       AppRoutes.route,

@@ -37,11 +37,6 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
   final _baseMapController = BaseMapController.instance;
   late final _canvasColor = Theme.of(context).canvasColor;
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
   void _registerSpotholeModal(BuildContext context) {
     widget.onRegister();
   }

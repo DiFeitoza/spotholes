@@ -34,9 +34,9 @@ class BaseMapPageState extends State<BaseMapPage> {
 
   @override
   void initState() {
+    super.initState();
     _baseMapController.loadCurrentLocation();
     _baseMapController.loadSpotholeMarkers(context);
-    super.initState();
   }
 
   @override
