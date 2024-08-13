@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
-import 'package:spotholes_android/controllers/route_controller.dart';
-import 'package:spotholes_android/utilities/dark_mode_context_extension.dart';
-import 'package:spotholes_android/widgets/draggable_scrollable_sheet/route_draggable_sheet.dart';
 
+import '../controllers/route_controller.dart';
 import '../utilities/constants.dart';
+import '../utilities/dark_mode_context_extension.dart';
+import '../widgets/draggable_scrollable_sheet/route_draggable_sheet.dart';
 
 class RoutePage extends StatefulWidget {
   const RoutePage({
@@ -125,6 +125,18 @@ class _RoutePageState extends State<RoutePage> {
                               );
                             },
                           ),
+                          // Center(
+                          //   child: FloatingActionButton(
+                          //     onPressed: () {
+                          //       _routeController.reloadSpotholesInRoute();
+                          //       ScaffoldMessenger.of(context).showSnackBar(
+                          //         const SnackBar(
+                          //           content: Text('Atualizado'),
+                          //         ),
+                          //       );
+                          //     },
+                          //   ),
+                          // ),
                           RouteDraggableSheet(
                             controller: RouteDraggableSheetController(),
                             destinationLocation: widget.destinationLocation,

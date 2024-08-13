@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 import 'package:spotholes_android/controllers/route_controller.dart';
 import 'package:spotholes_android/utilities/maneuver_icons.dart';
+import 'package:spotholes_android/widgets/bullet_list.dart';
 
 import '../../utilities/custom_icons.dart';
 import '../button/custom_button.dart';
@@ -52,6 +53,48 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
   void initState() {
     super.initState();
     draggableController.addListener(_updateExtent);
+    if (_haveWarnings()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showWarningsDialog();
+      });
+    }
+  }
+
+  bool _haveWarnings() => _route.warnings?.isNotEmpty == true ? true : false;
+
+  void _showWarningsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.warning),
+              SizedBox(
+                width: 12,
+              ),
+              Text(
+                'Alertas na Rota',
+              ),
+            ],
+          ),
+          content: BulletList(
+            items: _route.warnings!,
+          ),
+          actions: [
+            TextButton(
+              child: const Text(
+                'OK',
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _updateExtent() {
@@ -164,6 +207,11 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                             ),
                           ),
                           actions: [
+                            if (_haveWarnings())
+                              IconButton(
+                                icon: const Icon(Icons.warning),
+                                onPressed: _showWarningsDialog,
+                              ),
                             IconButton(
                               icon: const Icon(Icons.close),
                               onPressed: () => Navigator.of(context).pop(),
