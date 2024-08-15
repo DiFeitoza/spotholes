@@ -4,6 +4,7 @@ import 'package:signals/signals_flutter.dart';
 
 import '../controllers/route_controller.dart';
 import '../utilities/constants.dart';
+import '../package/custom_info_window.dart';
 import '../utilities/dark_mode_context_extension.dart';
 import '../widgets/draggable_scrollable_sheet/route_draggable_sheet.dart';
 
@@ -31,11 +32,14 @@ class _RoutePageState extends State<RoutePage> {
   late final _route = _directionResult.value.routes![0];
   late final _leg = _route.legs![0];
 
+  late final _customInfoWindowControllerSignal =
+      _routeController.customInfoWindowControllerSignal;
+
   bool _isLoading = true;
 
   Future<void> _loadRoute() async {
     await _routeController.loadRouteWithLegsAndSteps(
-        widget.sourceLocation, widget.destinationLocation);
+        widget.sourceLocation, widget.destinationLocation, context);
     setState(() {
       _isLoading = false;
     });
@@ -120,23 +124,23 @@ class _RoutePageState extends State<RoutePage> {
                                     },
                                     markers: _markers.value.values.toSet(),
                                     zoomControlsEnabled: false,
+                                    onCameraIdle: () =>
+                                        _customInfoWindowControllerSignal
+                                            .value.onCameraMove!(),
+                                    onTap: (position) =>
+                                        _customInfoWindowControllerSignal
+                                            .value.hideInfoWindow!(),
+                                    onCameraMove: (position) =>
+                                        _customInfoWindowControllerSignal
+                                            .value.onCameraMove!(),
                                   ),
                                 ),
                               );
                             },
                           ),
-                          // Center(
-                          //   child: FloatingActionButton(
-                          //     onPressed: () {
-                          //       _routeController.reloadSpotholesInRoute();
-                          //       ScaffoldMessenger.of(context).showSnackBar(
-                          //         const SnackBar(
-                          //           content: Text('Atualizado'),
-                          //         ),
-                          //       );
-                          //     },
-                          //   ),
-                          // ),
+                          CustomInfoWindow(
+                            controller: _customInfoWindowControllerSignal.value,
+                          ),
                           RouteDraggableSheet(
                             controller: RouteDraggableSheetController(),
                             destinationLocation: widget.destinationLocation,

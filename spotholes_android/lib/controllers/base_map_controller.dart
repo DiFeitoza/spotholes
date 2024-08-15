@@ -16,11 +16,10 @@ import '../services/service_locator.dart';
 import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
 import '../utilities/custom_snackbar.dart';
-import '../widgets/delete_spothole_alert_dialog.dart';
 import '../widgets/draggable_scrollable_sheet/draggable_scrollable_sheet_type.dart';
 import '../widgets/info_window/marker_info_window.dart';
 import '../widgets/modal/register_spothole_modal.dart';
-import '../widgets/info_window/spothole_info_window.dart';
+import 'spothole_info_window_controller.dart';
 
 class BaseMapController {
   BaseMapController._();
@@ -34,6 +33,7 @@ class BaseMapController {
   final _googleMapControllerCompleter = Completer();
   final _customInfoWindowControllerSignal =
       Signal<CustomInfoWindowController>(CustomInfoWindowController());
+  SpotholeInfoWindowController? spotholeInfoWindowController;
   final _textEditingController = TextEditingController();
   final _searchBarFocusNode = FocusNode();
 
@@ -60,6 +60,14 @@ class BaseMapController {
       "${_currentLocationSignal.value!.latitude!.toString()}"
       "%2C${_currentLocationSignal.value!.longitude!.toString()}";
 
+  void onMapCreated(mapController, context) {
+    _googleMapControllerCompleter.complete(mapController);
+    _customInfoWindowControllerSignal.value.googleMapController = mapController;
+    spotholeInfoWindowController = SpotholeInfoWindowController(
+        _customInfoWindowControllerSignal, _markersSignal);
+    loadSpotholeMarkers(context);
+  }
+
   void updateCameraGoogleMapsController(position, [zoom = defaultZoomMap]) {
     _googleMapController!.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -69,6 +77,10 @@ class BaseMapController {
         ),
       ),
     );
+  }
+
+  void centerView() {
+    updateCameraGoogleMapsController(currentLocationLatLng);
   }
 
   void loadCurrentLocation() async {
@@ -95,17 +107,15 @@ class BaseMapController {
     _markersSignal.value['currentLocationMarker'] = newMarker;
   }
 
-  void onMapCreated(mapController) {
-    _googleMapControllerCompleter.complete(mapController);
-    _customInfoWindowControllerSignal.value.googleMapController = mapController;
-  }
-
-  void centerView() {
-    updateCameraGoogleMapsController(currentLocationLatLng);
-  }
-
   changeDraggableSheet(DraggableScrollableSheetType type) {
     draggableScrollableSheetSignal.value = type.widget;
+  }
+
+  void closeDraggableSheet(String key) {
+    _customInfoWindowControllerSignal.value.hideInfoWindow!();
+    removeMarkerByKey(key);
+    changeDraggableSheet(DraggableScrollableSheetTypes.initial);
+    centerView();
   }
 
   void loadPlaceLocation(context, PlaceDetails placeDetails) {
@@ -131,54 +141,6 @@ class BaseMapController {
     markersSignal.value.remove(key);
   }
 
-  void closeDraggableSheet(String key) {
-    _customInfoWindowControllerSignal.value.hideInfoWindow!();
-    removeMarkerByKey(key);
-    changeDraggableSheet(DraggableScrollableSheetTypes.initial);
-    centerView();
-  }
-
-  void deleteSpothole(String spotholeId) {
-    dataBaseSpotholesRef.child(spotholeId).remove();
-    _customInfoWindowControllerSignal.value.hideInfoWindow!();
-    removeMarkerByKey(spotholeId);
-  }
-
-  void showDeleteSpotholeAlertDialog(context, String spotholeId) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return DeleteSpotholeAlertDialog(
-          onConfirm: () {
-            deleteSpothole(spotholeId);
-            Navigator.of(context).pop();
-          },
-        );
-      },
-    );
-  }
-
-  void addSpotholeMarker(context, String key, Spothole spothole) {
-    final marker = Marker(
-      markerId: MarkerId(key),
-      icon: CustomIcons.potholeSignIcon,
-      position: spothole.position,
-      onTap: () {
-        _customInfoWindowControllerSignal.value.addInfoWindow!(
-          SpotholeInfoWindow(
-            editSpothole: () => editSpotholeModal(
-                context, key, spothole.category, spothole.type),
-            showDeleteSpotholeAlertDialog: () =>
-                showDeleteSpotholeAlertDialog(context, key),
-            spothole: spothole,
-          ),
-          spothole.position,
-        );
-      },
-    );
-    markersSignal.value[key] = marker;
-  }
-
   void loadSpotholeMarkers(context) {
     databaseReference.child('spotholes').once().then(
       (DatabaseEvent event) {
@@ -188,7 +150,8 @@ class BaseMapController {
             (key, value) {
               final spothole =
                   Spothole.fromJson(Map<String, dynamic>.from(value as Map));
-              addSpotholeMarker(context, key, spothole);
+              spotholeInfoWindowController!
+                  .addSpotholeMarker(context, key, spothole);
             },
           );
         }
@@ -201,7 +164,8 @@ class BaseMapController {
         position, category, type);
     final newSpotHoleRef = dataBaseSpotholesRef.push();
     newSpotHoleRef.set(newSpothole.toJson());
-    addSpotholeMarker(context, newSpotHoleRef.key!, newSpothole);
+    spotholeInfoWindowController!
+        .addSpotholeMarker(context, newSpotHoleRef.key!, newSpothole);
   }
 
   void registerSpotholeModal(context, {LatLng? position}) {
@@ -214,38 +178,6 @@ class BaseMapController {
           textOnRegisterButton: "Adicionar",
           onRegister: (riskCategory, type) =>
               registerSpothole(context, latLng, riskCategory, type),
-        );
-      },
-    );
-  }
-
-  void editSpothole(context, key, riskCategory, type) async {
-    final dateOfUpdate = DateTime.now().toUtc();
-    final spotholeRef = databaseReference.ref.child('spotholes/$key');
-    final event = await spotholeRef.once();
-    final spotholeJson = Map<String, dynamic>.from(event.snapshot.value as Map);
-    final spothole = Spothole.fromJson(spotholeJson);
-    spothole.dateOfUpdate = dateOfUpdate;
-    spothole.category = riskCategory;
-    spothole.type = type;
-    addSpotholeMarker(context, key, spothole);
-    markersSignal.value[key].onTap!();
-    updateCameraGoogleMapsController(spothole.position);
-    spotholeRef.set(spothole.toJson());
-  }
-
-  void editSpotholeModal(context, key, riskCategory, riskType) {
-    showModalBottomSheet(
-      context: context,
-      builder: (builder) {
-        return RegisterSpotholeModal(
-          title: "Para editar um risco, selecione:",
-          textOnRegisterButton: "Editar",
-          isCountdown: false,
-          onRegister: (riskCategory, type) =>
-              editSpothole(context, key, riskCategory, type),
-          riskCategory: riskCategory,
-          riskType: riskType,
         );
       },
     );

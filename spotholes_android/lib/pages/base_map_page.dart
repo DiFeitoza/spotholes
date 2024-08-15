@@ -25,7 +25,7 @@ class BaseMapPageState extends State<BaseMapPage> {
       _baseMapController.draggableScrollableSheetSignal;
 
   void _onMapCreated(mapController) {
-    _baseMapController.onMapCreated(mapController);
+    _baseMapController.onMapCreated(mapController, context);
   }
 
   void _onLongPress(LatLng position) {
@@ -36,7 +36,6 @@ class BaseMapPageState extends State<BaseMapPage> {
   void initState() {
     super.initState();
     _baseMapController.loadCurrentLocation();
-    _baseMapController.loadSpotholeMarkers(context);
   }
 
   @override

@@ -4,15 +4,18 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:google_directions_api/google_directions_api.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
+import 'package:spotholes_android/controllers/spothole_info_window_controller.dart';
 
 import '../config/environment_config.dart';
 import '../models/spothole.dart';
+import '../package/custom_info_window.dart';
 import '../services/service_locator.dart';
 import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
 import '../utilities/map_utils.dart';
 
 import '../utilities/point_on_route_haversine.dart';
+import '../widgets/info_window/marker_info_window.dart';
 
 class RouteController {
   RouteController._();
@@ -25,6 +28,12 @@ class RouteController {
 
   GoogleMapController? _googleMapController;
   Completer _googleMapControllerCompleter = Completer();
+
+  final _customInfoWindowControllerSignal =
+      Signal<CustomInfoWindowController>(CustomInfoWindowController());
+  get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
+
+  SpotholeInfoWindowController? spotholeInfoWindowController;
 
   final _markersSignal = Signal<Map<String, Marker>>({});
   final _routePolylineCoordinatesSignal = Signal<List<LatLng>>([]);
@@ -40,6 +49,9 @@ class RouteController {
 
   void onMapCreated(mapController) {
     _googleMapControllerCompleter.complete(mapController);
+    _customInfoWindowControllerSignal.value.googleMapController = mapController;
+    spotholeInfoWindowController = SpotholeInfoWindowController(
+        _customInfoWindowControllerSignal, _markersSignal);
   }
 
   GeoCoord latLngToGeoCoord(LatLng latLng) =>
@@ -147,7 +159,7 @@ class RouteController {
   }
 
   Future<void> loadRouteWithLegsAndSteps(
-      LatLng sourceLocation, LatLng destinationLocation) async {
+      LatLng sourceLocation, LatLng destinationLocation, context) async {
     DirectionsService.init(EnvironmentConfig.googleApiKey!);
     final directionsService = DirectionsService();
 
@@ -176,9 +188,7 @@ class RouteController {
 
           _googleMapController = await _googleMapControllerCompleter.future;
           centerViewRoute();
-
-          loadSpotholesInRoute();
-
+          loadSpotholesInRoute(context);
           // routeToString(response);
           // showOverViewPathPoints(overViewPath);
         } else {
@@ -193,12 +203,24 @@ class RouteController {
       markerId: const MarkerId("sourceRoute"),
       icon: CustomIcons.sourceIcon,
       position: sourceLocation,
+      onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
+          const MarkerInfoWindow(
+            title: 'Rota',
+            textContent: 'Início da Rota',
+          ),
+          sourceLocation),
     );
 
     Marker destinationRouteMarker = Marker(
       markerId: const MarkerId("destinationRoute"),
       icon: CustomIcons.destinationIcon,
       position: destinationLocation,
+      onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
+          const MarkerInfoWindow(
+            title: 'Rota',
+            textContent: 'Destino da Rota',
+          ),
+          destinationLocation),
     );
 
     _markersSignal.value = {
@@ -226,7 +248,7 @@ class RouteController {
   //   };
   // }
 
-  void loadSpotholesInRoute() {
+  void loadSpotholesInRoute(context) {
     databaseReference.child('spotholes').once().then(
       (DatabaseEvent event) {
         final spotholesMap = event.snapshot.value as Map?;
@@ -237,11 +259,8 @@ class RouteController {
                   Spothole.fromJson(Map<String, dynamic>.from(value as Map));
               if (isPointNearRoute(
                   spothole.position, _routePolylineCoordinatesSignal.value)) {
-                _markersSignal.value[key] = Marker(
-                  markerId: MarkerId(key),
-                  position: spothole.position,
-                  icon: CustomIcons.potholeSignIcon,
-                );
+                spotholeInfoWindowController!
+                    .addSpotholeMarker(context, key, spothole);
               }
             },
           );
