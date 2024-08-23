@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart' hide Step;
 import 'package:google_directions_api/google_directions_api.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
@@ -46,6 +47,12 @@ class RouteController {
       _routePolylineCoordinatesSignal;
   Signal<List<String>> get routeAndStepsListSignal => _routeAndStepsListSignal;
   Signal<DirectionsResult> get directionResult => _directionResult;
+
+  final _showStepsPageSignal = signal(false);
+  get showStepsPageSignal => _showStepsPageSignal;
+
+  final _pageControllerSignal = Signal(PageController());
+  get pageControllerSignal => _pageControllerSignal;
 
   void onMapCreated(mapController) {
     _googleMapControllerCompleter.complete(mapController);
@@ -99,7 +106,6 @@ class RouteController {
   List<String> routeToString(DirectionsResult response) {
     List<String> strSteps = [];
     String strRoute = '';
-    // do something with successful response
     LatLng northeastBound =
         geoCoordToLatLng(response.routes![0].bounds!.northeast);
     LatLng southwestBound =
@@ -265,7 +271,7 @@ class RouteController {
             },
           );
 
-          // TODO teste
+          // TODO código comentado do arquivo para teste do algoritmo de filtro dos riscos da rota
           // spotholesList = spotholesMap.entries.map((entry) {
           //   return Spothole.fromJson(Map<String, dynamic>.from(entry.value));
           // }).toList();
@@ -277,6 +283,11 @@ class RouteController {
         }
       },
     );
+  }
+
+  void setupStepsPageView(int initialPage) {
+    _pageControllerSignal.value = PageController(initialPage: initialPage);
+    _showStepsPageSignal.value = true;
   }
 
   dispose() {

@@ -6,7 +6,9 @@ import '../controllers/route_controller.dart';
 import '../utilities/constants.dart';
 import '../package/custom_info_window.dart';
 import '../utilities/dark_mode_context_extension.dart';
+import '../widgets/button/custom_button.dart';
 import '../widgets/draggable_scrollable_sheet/route_draggable_sheet.dart';
+import '../widgets/route_steps_page_view.dart';
 
 class RoutePage extends StatefulWidget {
   const RoutePage({
@@ -37,6 +39,32 @@ class _RoutePageState extends State<RoutePage> {
 
   bool _isLoading = true;
 
+  late final _showStepsPageSignal = _routeController.showStepsPageSignal;
+  late final Signal<PageController> _pageControllerSignal =
+      _routeController.pageControllerSignal;
+
+  void _toggleWidgets() {
+    _showStepsPageSignal.value = !_showStepsPageSignal.value;
+  }
+
+  List<Widget> _horizontalListButtons(BuildContext context, position) {
+    return [
+      CustomButton(
+        label: 'Iniciar viagem',
+        bgColor: Colors.tealAccent.shade400,
+        onPressed: () => {},
+      ),
+      CustomButton(
+        label: 'Centralizar',
+        bgColor: Colors.tealAccent.shade400,
+        onPressed: () => {
+          _routeController.centerViewRoute(),
+          // changeSizeDraggableScrollableSheet(_minDraggableChildSize),
+        },
+      ),
+    ];
+  }
+
   Future<void> _loadRoute() async {
     await _routeController.loadRouteWithLegsAndSteps(
         widget.sourceLocation, widget.destinationLocation, context);
@@ -61,94 +89,191 @@ class _RoutePageState extends State<RoutePage> {
               child: CircularProgressIndicator(),
             ),
           )
-        : Scaffold(
-            backgroundColor: context.isDarkMode ? Colors.black : Colors.white,
-            appBar: AppBar(
-              backgroundColor: Theme.of(context).canvasColor,
-              centerTitle: true,
-              title: Text("Seu local ➞ Destino",
-                  style: Theme.of(context).textTheme.titleLarge),
-            ),
-            body: SafeArea(
-              child: Container(
-                color: context.isDarkMode ? Colors.white : Colors.black,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      color: Theme.of(context).focusColor,
-                      child: Column(
-                        children: [
-                          Text(
-                            'Via: ${_route.summary!}',
-                            style: Theme.of(context).textTheme.bodyLarge,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+        : Watch(
+            (context) => PopScope(
+              canPop: !_showStepsPageSignal.value,
+              onPopInvoked: (didPop) {
+                if (_showStepsPageSignal.value) {
+                  _toggleWidgets();
+                }
+              },
+              child: Scaffold(
+                backgroundColor:
+                    context.isDarkMode ? Colors.black : Colors.white,
+                appBar: AppBar(
+                  backgroundColor: Theme.of(context).canvasColor,
+                  centerTitle: true,
+                  title: !_showStepsPageSignal.value
+                      ? Text(
+                          "Seu local ➞ Destino",
+                          style: Theme.of(context).textTheme.titleLarge,
+                        )
+                      : Text(
+                          "Etapas da rota",
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                ),
+                body: SafeArea(
+                  child: Container(
+                    color: context.isDarkMode ? Colors.white : Colors.black,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          color: Theme.of(context).focusColor,
+                          child: Column(
+                            children: [
+                              Text(
+                                'Via: ${_route.summary!}',
+                                style: Theme.of(context).textTheme.bodyLarge,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                '${_leg.distance!.text} (${_leg.duration!.text})',
+                                style: Theme.of(context).textTheme.titleLarge,
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
-                          Text(
-                            '${_leg.distance!.text} (${_leg.duration!.text})',
-                            style: Theme.of(context).textTheme.titleLarge,
-                            textAlign: TextAlign.center,
+                        ),
+                        if (_showStepsPageSignal.value)
+                          RouteStepsPageView(
+                            pageController: _pageControllerSignal.value,
+                            route: _route,
                           ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          LayoutBuilder(
-                            builder: (BuildContext context,
-                                BoxConstraints constraints) {
-                              return SizedBox(
-                                height: constraints.maxHeight / 1.50,
-                                child: Watch(
-                                  (context) => GoogleMap(
-                                    onMapCreated:
-                                        (GoogleMapController controller) =>
-                                            _routeController
-                                                .onMapCreated(controller),
-                                    initialCameraPosition: CameraPosition(
-                                      target: widget.sourceLocation,
-                                      zoom: defaultZoomMap,
-                                    ),
-                                    polylines: {
-                                      Polyline(
-                                        polylineId: const PolylineId("route"),
-                                        points: _routePolylineCoordinatesSignal
-                                            .value,
-                                        color: primaryColor,
-                                        width: 6,
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              LayoutBuilder(
+                                builder: (BuildContext context,
+                                    BoxConstraints constraints) {
+                                  return SizedBox(
+                                    height: _showStepsPageSignal.value
+                                        ? constraints.maxHeight
+                                        : constraints.maxHeight / 1.50,
+                                    child: GoogleMap(
+                                      onMapCreated:
+                                          (GoogleMapController controller) =>
+                                              _routeController
+                                                  .onMapCreated(controller),
+                                      initialCameraPosition: CameraPosition(
+                                        target: widget.sourceLocation,
+                                        zoom: defaultZoomMap,
                                       ),
-                                    },
-                                    markers: _markers.value.values.toSet(),
-                                    zoomControlsEnabled: false,
-                                    onCameraIdle: () =>
-                                        _customInfoWindowControllerSignal
-                                            .value.onCameraMove!(),
-                                    onTap: (position) =>
-                                        _customInfoWindowControllerSignal
-                                            .value.hideInfoWindow!(),
-                                    onCameraMove: (position) =>
-                                        _customInfoWindowControllerSignal
-                                            .value.onCameraMove!(),
+                                      polylines: {
+                                        Polyline(
+                                          polylineId: const PolylineId("route"),
+                                          points:
+                                              _routePolylineCoordinatesSignal
+                                                  .value,
+                                          color: primaryColor,
+                                          width: 6,
+                                        ),
+                                      },
+                                      markers: _markers.value.values.toSet(),
+                                      zoomControlsEnabled: false,
+                                      onCameraIdle: () =>
+                                          _customInfoWindowControllerSignal
+                                              .value.onCameraMove!(),
+                                      onTap: (position) =>
+                                          _customInfoWindowControllerSignal
+                                              .value.hideInfoWindow!(),
+                                      onCameraMove: (position) =>
+                                          _customInfoWindowControllerSignal
+                                              .value.onCameraMove!(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              CustomInfoWindow(
+                                controller:
+                                    _customInfoWindowControllerSignal.value,
+                              ),
+                              Visibility(
+                                visible: !_showStepsPageSignal.value,
+                                maintainState: true,
+                                child: RouteDraggableSheet(
+                                  controller: RouteDraggableSheetController(),
+                                  destinationLocation:
+                                      widget.destinationLocation,
+                                ),
+                              ),
+                              if (_showStepsPageSignal.value)
+                                Positioned(
+                                  bottom: 24,
+                                  right: 36,
+                                  child: Row(
+                                    children: [
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          surfaceTintColor: Colors.white,
+                                          minimumSize: const Size.square(48),
+                                          shape: RoundedRectangleBorder(
+                                            side: const BorderSide(width: 0.2),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          _pageControllerSignal.value
+                                              .previousPage(
+                                                  duration: Durations.medium1,
+                                                  curve: Curves.easeInOutExpo);
+                                        },
+                                        child: const Icon(
+                                          Icons.arrow_left,
+                                          size: 32,
+                                        ),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          surfaceTintColor: Colors.white,
+                                          minimumSize: const Size.square(48),
+                                          shape: RoundedRectangleBorder(
+                                            side: const BorderSide(width: 0.2),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          _pageControllerSignal.value.nextPage(
+                                              duration: Durations.medium1,
+                                              curve: Curves.easeInOutExpo);
+                                        },
+                                        child: const Icon(
+                                          Icons.arrow_right,
+                                          size: 32,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              );
-                            },
+                            ],
                           ),
-                          CustomInfoWindow(
-                            controller: _customInfoWindowControllerSignal.value,
+                        ),
+                        Visibility(
+                          visible: _showStepsPageSignal.value,
+                          maintainState: true,
+                          child: Container(
+                            color: Colors.white,
+                            child: SizedBox(
+                              height: 60.0,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: _horizontalListButtons(
+                                  context,
+                                  widget.destinationLocation,
+                                ),
+                              ),
+                            ),
                           ),
-                          RouteDraggableSheet(
-                            controller: RouteDraggableSheetController(),
-                            destinationLocation: widget.destinationLocation,
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),

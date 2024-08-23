@@ -44,8 +44,8 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
 
   late final _canvasColor = Theme.of(context).canvasColor;
 
-  late final _directionResult = _routeController.directionResult;
-  late final _route = _directionResult.value.routes![0];
+  late final _directionResult = _routeController.directionResult.value;
+  late final _route = _directionResult.routes![0];
   late final _leg = _route.legs![0];
   late final _steps = _leg.steps!;
 
@@ -256,7 +256,8 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                         changeSizeDraggableScrollableSheet(
                                             _intermediateDraggableChildSize),
                                         _routeController
-                                            .updateCamera(_leg.startLocation!),
+                                          ..updateCamera(_leg.startLocation!)
+                                          ..setupStepsPageView(0),
                                       },
                                     );
                                   } else if (index == _steps.length + 1) {
@@ -280,7 +281,8 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                         changeSizeDraggableScrollableSheet(
                                             _intermediateDraggableChildSize),
                                         _routeController
-                                            .updateCamera(_leg.endLocation!),
+                                          ..updateCamera(_leg.endLocation!)
+                                          ..setupStepsPageView(index),
                                       },
                                       title: Text(
                                         'Destino: ${_leg.endAddress!}',
@@ -321,6 +323,8 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                               )
                                             : _routeController.updateCamera(
                                                 step.startLocation!),
+                                        _routeController
+                                            .setupStepsPageView(index),
                                       },
                                       leading: Icon(
                                         icon,
@@ -359,18 +363,16 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
               },
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                height: 60.0,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: _horizontalListButtons(
-                      context, widget.destinationLocation),
-                ),
-              )
-            ],
+          Container(
+            color: Colors.white,
+            child: SizedBox(
+              height: 60.0,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children:
+                    _horizontalListButtons(context, widget.destinationLocation),
+              ),
+            ),
           ),
         ],
       ),
