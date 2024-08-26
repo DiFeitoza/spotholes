@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart' hide Step;
 import 'package:google_directions_api/google_directions_api.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart' as fpp;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 import 'package:spotholes_android/controllers/spothole_info_window_controller.dart';
@@ -116,9 +117,9 @@ class RouteController {
     //SUMARY
     strRoute += 'summary: ${response.routes![0].summary}\n';
     //OVERVIEW PATH
-    List<GeoCoord> overViewPath = response.routes![0].overviewPath!;
+    List<GeoCoord> points = response.routes![0].overviewPath!;
     strRoute += 'overviewPath: ';
-    for (GeoCoord geoCoord in overViewPath) {
+    for (GeoCoord geoCoord in points) {
       strRoute += '${geoCoordToString(geoCoord)}, ';
     }
     strRoute += '\n';
@@ -149,19 +150,36 @@ class RouteController {
     return strSteps;
   }
 
-  void showOverViewPathPoints(overViewPath) {
+  void showOverViewPathPoints(List<LatLng> points) {
     // REGISTRA OS PONTOS DA POLYLINE PARA TESTE
     Map<String, Marker> markers = {};
-    for (GeoCoord geoCoord in overViewPath) {
-      markers[geoCoordToString(geoCoord)] = Marker(
-        markerId: MarkerId(geoCoordToString(geoCoord)),
-        position: geoCoordToLatLng(geoCoord),
+    for (LatLng point in points) {
+      String strPoint = latLngToString(point);
+      markers[strPoint] = Marker(
+        markerId: MarkerId(strPoint),
+        position: point,
       );
     }
     _markersSignal.value = {
       ..._markersSignal.value,
       ...markers,
     };
+  }
+
+  List<LatLng> decodePolyline(String encoded) {
+    return fpp.PolylinePoints()
+        .decodePolyline(encoded)
+        .map((point) => LatLng(point.latitude, point.longitude))
+        .toList();
+  }
+
+  List<LatLng> extractPointsFromSteps(List<Step> steps) {
+    List<LatLng> routePoints = [];
+    for (var step in steps) {
+      var polyline = step.polyline!.points;
+      routePoints.addAll(decodePolyline(polyline!));
+    }
+    return routePoints;
   }
 
   Future<void> loadRouteWithLegsAndSteps(
@@ -183,20 +201,17 @@ class RouteController {
         if (status == DirectionsStatus.ok) {
           _directionResult.value = response;
           //Plot da ROTA e dos MARCADORES de ROTA
-          final overViewPath = response.routes![0].overviewPath!;
-          if (overViewPath.isNotEmpty) {
-            final newList =
-                overViewPath.map((point) => geoCoordToLatLng(point)).toList();
-            _routePolylineCoordinatesSignal.value = newList;
-            loadRouteMarkers(_routePolylineCoordinatesSignal.value.first,
-                _routePolylineCoordinatesSignal.value.last);
-          }
+          final steps = response.routes!.first.legs!.first.steps;
+          final points = extractPointsFromSteps(steps!);
+          _routePolylineCoordinatesSignal.value = points;
+          loadRouteMarkers(_routePolylineCoordinatesSignal.value.first,
+              _routePolylineCoordinatesSignal.value.last);
 
           _googleMapController = await _googleMapControllerCompleter.future;
           centerViewRoute();
           loadSpotholesInRoute(context);
           // routeToString(response);
-          // showOverViewPathPoints(overViewPath);
+          // showOverViewPathPoints(points);
         } else {
           // do something with error response
         }
