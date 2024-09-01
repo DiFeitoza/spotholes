@@ -1,9 +1,9 @@
 import 'dart:math';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-// Função para calcular a distância de Haversine entre dois pontos
+// Function to calculate the Haversine distance between two points
 double haversine(LatLng point1, LatLng point2) {
-  const R = 6371000; // Raio da Terra em metros
+  const R = 6371000; // Earth radius in meters
   final phi1 = point1.latitude * pi / 180;
   final phi2 = point2.latitude * pi / 180;
   final deltaPhi = (point2.latitude - point1.latitude) * pi / 180;
@@ -16,7 +16,7 @@ double haversine(LatLng point1, LatLng point2) {
   return R * c;
 }
 
-// Função para calcular a distância de um ponto a um segmento de linha
+// Function to calculate the distance from a point to a line segment
 double pointToSegmentDistance(LatLng point, LatLng start, LatLng end) {
   final A = [
     point.latitude - start.latitude,
@@ -35,7 +35,7 @@ double pointToSegmentDistance(LatLng point, LatLng start, LatLng end) {
   return haversine(point, projection);
 }
 
-// Função para verificar se um ponto está dentro da tolerância em relação a uma rota
+// Function to check if a point is within tolerance with respect to a route
 bool isPointNearRoute(LatLng point, List<LatLng> route,
     {double tolerance = 5.0}) {
   for (int i = 0; i < route.length - 1; i++) {
@@ -49,7 +49,7 @@ bool isPointNearRoute(LatLng point, List<LatLng> route,
   return false;
 }
 
-// Função para verificar uma lista de pontos
+// Function to check a list of points
 List<bool> arePointsNearRoute(List<LatLng> points, List<LatLng> route,
     {double tolerance = 5.0}) {
   return points

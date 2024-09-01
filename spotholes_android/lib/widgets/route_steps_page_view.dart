@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:expandable_page_view/expandable_page_view.dart';
 import 'package:flutter/material.dart' hide Step;
-import 'package:flutter_html/flutter_html.dart';
+import 'package:flutter_html/flutter_html.dart' hide Marker;
 import 'package:google_directions_api/google_directions_api.dart';
 
 import '../controllers/route_controller.dart';
@@ -31,36 +31,52 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
   late final _leg = widget.route.legs![0];
   late final _steps = _leg.steps!;
 
-  // Timer? _timer;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _animateOnce();
-      // _startRepeatingAnimation(times: 3, interval: 5);
     });
-    _pageController.addListener(() {
-      int newPage = _pageController.page!.round();
-      if (newPage != _currentPage) {
-        if (mounted) {
-          setState(() {
-            _currentPage = newPage;
-          });
+    _pageController.addListener(
+      () {
+        int newPage = _pageController.page!.round();
+        if (newPage != _currentPage) {
+          _currentPage = newPage;
+          _cleanPolylines();
           if (_currentPage == 0) {
             _routeController.updateCamera(_leg.startLocation!);
           } else if (_currentPage == _steps.length + 1) {
             _routeController.updateCamera(_leg.endLocation!);
           } else {
-            final step = _steps[_currentPage - 1];
-            final maneuver = step.maneuver ?? 'straight';
-            maneuver == 'straight'
-                ? _routeController.newCameraLatLngBoundsFromStep(step)
-                : _routeController.updateCamera(step.startLocation!);
+            final stepIndex = _currentPage - 1;
+            _routeController.plotManeuver(stepIndex);
           }
         }
-      }
-    });
+      },
+    );
+  }
+
+  void _cleanPolylines() {
+    _routeController.polylinesSignal.value.remove('maneuverArrow');
+    _routeController.polylinesSignal.value.remove('straightPath');
+    _routeController.polylinesSignal.value = {
+      ..._routeController.polylinesSignal.value
+    };
+  }
+
+  void _initialStepCamera() {
+    final initialPage = _pageController.initialPage;
+    if (initialPage == 0) {
+      _routeController.updateCamera(_leg.startLocation!);
+    } else if (initialPage == _steps.length + 1) {
+      _routeController.updateCamera(_leg.endLocation!);
+    } else {
+      final step = _steps[initialPage - 1];
+      final maneuver = step.maneuver ?? 'straight';
+      maneuver == 'straight'
+          ? _routeController.newCameraLatLngBoundsFromStep(step)
+          : _routeController.updateCamera(step.startLocation!);
+    }
   }
 
   void _animateOnce() {
@@ -87,47 +103,17 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
     }
   }
 
-  // void _startRepeatingAnimation({required int times, required int interval}) {
-  //   _animateOnce();
-  //   times--;
-  //   _timer = Timer.periodic(
-  //     Duration(seconds: interval),
-  //     (timer) {
-  //       if (times > 0) {
-  //         _animateOnce();
-  //         times--;
-  //       } else {
-  //         _stopAnimation();
-  //       }
-  //     },
-  //   );
-  // }
-
-  // void _stopAnimation() {
-  //   _timer?.cancel();
-  //   _timer = null;
-  // }
-
-  // @override
-  // void dispose() {
-  //   // _stopAnimation();
-  //   super.dispose();
-  // }
+  @override
+  void dispose() {
+    _cleanPolylines();
+    _initialStepCamera();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Material(
       child: InkWell(
-        // child: GestureDetector(
-        // onTapDown: (details) {
-        //   _stopAnimation();
-        // },
-        // onLongPressStart: (details) {
-        //   _stopAnimation();
-        // },
-        // onPanStart: (details) {
-        //   _stopAnimation();
-        // },
         child: ExpandablePageView.builder(
           controller: _pageController,
           itemCount: _steps.length + 2,

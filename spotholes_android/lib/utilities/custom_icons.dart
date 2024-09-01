@@ -7,6 +7,7 @@ class CustomIcons {
   static BitmapDescriptor destinationIcon = BitmapDescriptor.defaultMarker;
   static BitmapDescriptor currentLocationIcon = BitmapDescriptor.defaultMarker;
   static BitmapDescriptor potholeSignIcon = BitmapDescriptor.defaultMarker;
+  static BitmapDescriptor redHeadManeuverArrow = BitmapDescriptor.defaultMarker;
 
   static Image riskTypePothole = Image.asset(
       'assets/images/risks/buraco_na_pista.png',
@@ -57,6 +58,13 @@ class CustomIcons {
     ImageSizeAdjust.getCustomIcon('assets/images/pothole_sign.png', 100).then(
       (icon) {
         potholeSignIcon = icon;
+      },
+    );
+    ImageSizeAdjust.getCustomIcon(
+            'assets/images/red_head_maneuver_arrow.png', 40)
+        .then(
+      (icon) {
+        redHeadManeuverArrow = icon;
       },
     );
   }

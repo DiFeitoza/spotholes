@@ -3,8 +3,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 
 import '../controllers/route_controller.dart';
-import '../utilities/constants.dart';
 import '../package/custom_info_window.dart';
+import '../utilities/constants.dart';
 import '../utilities/dark_mode_context_extension.dart';
 import '../widgets/button/custom_button.dart';
 import '../widgets/draggable_scrollable_sheet/route_draggable_sheet.dart';
@@ -27,8 +27,6 @@ class RoutePage extends StatefulWidget {
 class _RoutePageState extends State<RoutePage> {
   final _routeController = RouteController.instance;
   late final _markers = _routeController.markersSignal;
-  late final _routePolylineCoordinatesSignal =
-      _routeController.routePolylineCoordinatesSignal;
 
   late final _directionResult = _routeController.directionResult;
   late final _route = _directionResult.value.routes![0];
@@ -154,36 +152,31 @@ class _RoutePageState extends State<RoutePage> {
                                     height: _showStepsPageSignal.value
                                         ? constraints.maxHeight
                                         : constraints.maxHeight / 1.50,
-                                    child: GoogleMap(
-                                      onMapCreated:
-                                          (GoogleMapController controller) =>
-                                              _routeController
-                                                  .onMapCreated(controller),
-                                      initialCameraPosition: CameraPosition(
-                                        target: widget.sourceLocation,
-                                        zoom: defaultZoomMap,
-                                      ),
-                                      polylines: {
-                                        Polyline(
-                                          polylineId: const PolylineId("route"),
-                                          points:
-                                              _routePolylineCoordinatesSignal
-                                                  .value,
-                                          color: primaryColor,
-                                          width: 6,
+                                    child: Watch(
+                                      (context) => GoogleMap(
+                                        onMapCreated:
+                                            (GoogleMapController controller) =>
+                                                _routeController
+                                                    .onMapCreated(controller),
+                                        initialCameraPosition: CameraPosition(
+                                          target: widget.sourceLocation,
+                                          zoom: defaultZoomMap,
                                         ),
-                                      },
-                                      markers: _markers.value.values.toSet(),
-                                      zoomControlsEnabled: false,
-                                      onCameraIdle: () =>
-                                          _customInfoWindowControllerSignal
-                                              .value.onCameraMove!(),
-                                      onTap: (position) =>
-                                          _customInfoWindowControllerSignal
-                                              .value.hideInfoWindow!(),
-                                      onCameraMove: (position) =>
-                                          _customInfoWindowControllerSignal
-                                              .value.onCameraMove!(),
+                                        polylines: _routeController
+                                            .polylinesSignal.value.values
+                                            .toSet(),
+                                        markers: _markers.value.values.toSet(),
+                                        zoomControlsEnabled: false,
+                                        onCameraIdle: () =>
+                                            _customInfoWindowControllerSignal
+                                                .value.onCameraMove!(),
+                                        onTap: (position) =>
+                                            _customInfoWindowControllerSignal
+                                                .value.hideInfoWindow!(),
+                                        onCameraMove: (position) =>
+                                            _customInfoWindowControllerSignal
+                                                .value.onCameraMove!(),
+                                      ),
                                     ),
                                   );
                                 },

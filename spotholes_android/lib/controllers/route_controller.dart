@@ -2,20 +2,20 @@ import 'dart:async';
 
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart' hide Step;
-import 'package:google_directions_api/google_directions_api.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart' as fpp;
+import 'package:google_directions_api/google_directions_api.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
-import 'package:spotholes_android/controllers/spothole_info_window_controller.dart';
 
 import '../config/environment_config.dart';
+import '../controllers/spothole_info_window_controller.dart';
 import '../models/spothole.dart';
 import '../package/custom_info_window.dart';
 import '../services/service_locator.dart';
 import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
+import '../utilities/maneuver_arrow_polyline.dart';
 import '../utilities/map_utils.dart';
-
 import '../utilities/point_on_route_haversine.dart';
 import '../widgets/info_window/marker_info_window.dart';
 
@@ -39,6 +39,9 @@ class RouteController {
 
   final _markersSignal = Signal<Map<String, Marker>>({});
   final _routePolylineCoordinatesSignal = Signal<List<LatLng>>([]);
+  final _polylinesSignal = Signal<Map<String, Polyline>>({});
+  final _routePolyline =
+      Signal<Polyline>(const Polyline(polylineId: PolylineId('null')));
   final _directionResult = Signal<DirectionsResult>(const DirectionsResult());
 
   final _routeAndStepsListSignal = Signal<List<String>>([]);
@@ -46,6 +49,8 @@ class RouteController {
   Signal<Map<String, Marker>> get markersSignal => _markersSignal;
   Signal<List<LatLng>> get routePolylineCoordinatesSignal =>
       _routePolylineCoordinatesSignal;
+  Signal<Map<String, Polyline>> get polylinesSignal => _polylinesSignal;
+  Signal<Polyline> get routePolyline => _routePolyline;
   Signal<List<String>> get routeAndStepsListSignal => _routeAndStepsListSignal;
   Signal<DirectionsResult> get directionResult => _directionResult;
 
@@ -204,9 +209,16 @@ class RouteController {
           final steps = response.routes!.first.legs!.first.steps;
           final points = extractPointsFromSteps(steps!);
           _routePolylineCoordinatesSignal.value = points;
+          _polylinesSignal.value['route'] = Polyline(
+            polylineId: const PolylineId("route"),
+            points: _routePolylineCoordinatesSignal.value,
+            width: 6,
+            color: primaryColor,
+            geodesic: true,
+            jointType: JointType.round,
+          );
           loadRouteMarkers(_routePolylineCoordinatesSignal.value.first,
               _routePolylineCoordinatesSignal.value.last);
-
           _googleMapController = await _googleMapControllerCompleter.future;
           centerViewRoute();
           loadSpotholesInRoute(context);
@@ -303,6 +315,67 @@ class RouteController {
   void setupStepsPageView(int initialPage) {
     _pageControllerSignal.value = PageController(initialPage: initialPage);
     _showStepsPageSignal.value = true;
+  }
+
+  void plotManeuver(int stepIndex) {
+    final steps = _directionResult.value.routes![0].legs![0].steps;
+    final step = steps![stepIndex];
+    final maneuver = step.maneuver ?? 'straight';
+    List<LatLng> maneuverPoints = [];
+    List<LatLng> arrowPoints = [];
+    int? midpointIndex;
+
+    final sourceLocation = markersSignal.value['sourceRouteMarker']!.position;
+
+    maneuverPoints = decodePolyline(step.polyline!.points!);
+
+    if (maneuver == 'straight') {
+      newCameraLatLngBoundsFromStep(step);
+      polylinesSignal.value.addAll({
+        'straightPath': Polyline(
+          polylineId: const PolylineId('straightPath'),
+          points: maneuverPoints,
+          geodesic: true,
+          width: 3,
+          color: Colors.red.shade100,
+          jointType: JointType.round,
+          zIndex: 1,
+        )
+      });
+    } else {
+      updateCamera(step.startLocation!);
+      if (stepIndex == 0) {
+        maneuverPoints = [sourceLocation, ...maneuverPoints];
+        midpointIndex = 1;
+      } else {
+        final beforeManeuverPoints =
+            decodePolyline(steps[stepIndex - 1].polyline!.points!);
+        midpointIndex = beforeManeuverPoints.length;
+        maneuverPoints.insertAll(0, beforeManeuverPoints);
+      }
+    }
+
+    arrowPoints = getSegmentAroundMidpoint(
+      maneuverPoints,
+      20,
+      20,
+      midpointIndex: midpointIndex,
+    );
+
+    polylinesSignal.value.addAll({
+      'maneuverArrow': Polyline(
+        polylineId: const PolylineId('maneuverArrow'),
+        points: arrowPoints,
+        geodesic: true,
+        width: 8,
+        color: Colors.red,
+        jointType: JointType.round,
+        endCap: Cap.customCapFromBitmap(CustomIcons.redHeadManeuverArrow),
+        zIndex: 2,
+      )
+    });
+
+    polylinesSignal.value = {...polylinesSignal.value};
   }
 
   dispose() {
