@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
+import 'package:spotholes_android/widgets/spotholes_page_view.dart';
 
 import '../controllers/route_controller.dart';
 import '../package/custom_info_window.dart';
@@ -36,6 +37,8 @@ class _RoutePageState extends State<RoutePage> {
       _routeController.customInfoWindowControllerSignal;
 
   bool _isLoading = true;
+
+  late final _pageViewTypeSignal = _routeController.pageViewTypeSignal;
 
   late final _showStepsPageSignal = _routeController.showStepsPageSignal;
   late final Signal<PageController> _pageControllerSignal =
@@ -78,10 +81,15 @@ class _RoutePageState extends State<RoutePage> {
   }
 
   @override
+  void dispose() {
+    RouteController.resetInstance();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _isLoading == true
         ? Container(
-            //TODO criar tela de transição e lidar com o caso de erro!
             color: Colors.white,
             child: const Center(
               child: CircularProgressIndicator(),
@@ -107,7 +115,7 @@ class _RoutePageState extends State<RoutePage> {
                           style: Theme.of(context).textTheme.titleLarge,
                         )
                       : Text(
-                          "Etapas da rota",
+                          "Detalhes da rota",
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                 ),
@@ -137,11 +145,16 @@ class _RoutePageState extends State<RoutePage> {
                             ],
                           ),
                         ),
-                        if (_showStepsPageSignal.value)
+                        if (_showStepsPageSignal.value &&
+                            _pageViewTypeSignal.value == 'route')
                           RouteStepsPageView(
                             pageController: _pageControllerSignal.value,
                             route: _route,
                           ),
+                        if (_showStepsPageSignal.value &&
+                            _pageViewTypeSignal.value == 'spothole')
+                          SpotholesPageView(
+                              pageController: _pageControllerSignal.value),
                         Expanded(
                           child: Stack(
                             children: [

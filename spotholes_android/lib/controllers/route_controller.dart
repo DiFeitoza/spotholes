@@ -24,12 +24,16 @@ class RouteController {
   static RouteController? _instance;
   static RouteController get instance => _instance ??= RouteController._();
 
+  static void resetInstance() {
+    _instance = null;
+  }
+
   final databaseReference = getIt<DatabaseReference>();
   late final dataBaseSpotholesRef = databaseReference.child('spotholes');
-  List<Spothole> spotholesList = [];
+  final _spotholesInRouteList = Signal<List<Spothole>>([]);
 
   GoogleMapController? _googleMapController;
-  Completer _googleMapControllerCompleter = Completer();
+  final _googleMapControllerCompleter = Completer();
 
   final _customInfoWindowControllerSignal =
       Signal<CustomInfoWindowController>(CustomInfoWindowController());
@@ -46,6 +50,7 @@ class RouteController {
 
   final _routeAndStepsListSignal = Signal<List<String>>([]);
 
+  Signal<List<Spothole>> get spotholesInRouteList => _spotholesInRouteList;
   Signal<Map<String, Marker>> get markersSignal => _markersSignal;
   Signal<List<LatLng>> get routePolylineCoordinatesSignal =>
       _routePolylineCoordinatesSignal;
@@ -56,6 +61,9 @@ class RouteController {
 
   final _showStepsPageSignal = signal(false);
   get showStepsPageSignal => _showStepsPageSignal;
+
+  final _pageViewTypeSignal = signal('');
+  get pageViewTypeSignal => _pageViewTypeSignal;
 
   final _pageControllerSignal = Signal(PageController());
   get pageControllerSignal => _pageControllerSignal;
@@ -79,12 +87,23 @@ class RouteController {
   String geoCoordToString(GeoCoord geoCoord) =>
       '${geoCoord.latitude},${geoCoord.longitude}';
 
-  void updateCamera(GeoCoord target, [zoom = defaultZoomMap]) {
+  void updateCameraGeoCoord(GeoCoord target, [zoom = defaultZoomMap]) {
     _googleMapController!.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           zoom: zoom,
           target: geoCoordToLatLng(target),
+        ),
+      ),
+    );
+  }
+
+  void updateCameraLatLng(LatLng target, [zoom = defaultZoomMap]) {
+    _googleMapController!.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          zoom: zoom,
+          target: target,
         ),
       ),
     );
@@ -109,6 +128,7 @@ class RouteController {
     );
   }
 
+  // TODO just for dev tests!
   List<String> routeToString(DirectionsResult response) {
     List<String> strSteps = [];
     String strRoute = '';
@@ -155,8 +175,8 @@ class RouteController {
     return strSteps;
   }
 
+  // TODO just for dev tests!
   void showOverViewPathPoints(List<LatLng> points) {
-    // REGISTRA OS PONTOS DA POLYLINE PARA TESTE
     Map<String, Marker> markers = {};
     for (LatLng point in points) {
       String strPoint = latLngToString(point);
@@ -205,7 +225,6 @@ class RouteController {
       (DirectionsResult response, DirectionsStatus? status) async {
         if (status == DirectionsStatus.ok) {
           _directionResult.value = response;
-          //Plot da ROTA e dos MARCADORES de ROTA
           final steps = response.routes!.first.legs!.first.steps;
           final points = extractPointsFromSteps(steps!);
           _routePolylineCoordinatesSignal.value = points;
@@ -222,8 +241,6 @@ class RouteController {
           _googleMapController = await _googleMapControllerCompleter.future;
           centerViewRoute();
           loadSpotholesInRoute(context);
-          // routeToString(response);
-          // showOverViewPathPoints(points);
         } else {
           // do something with error response
         }
@@ -263,47 +280,26 @@ class RouteController {
     };
   }
 
-  // void reloadSpotholesInRoute() {
-  //   _markersSignal.value = {};
-  //   for (final spothole in spotholesList) {
-  //     if (isPointNearRoute(
-  //         spothole.position, _routePolylineCoordinatesSignal.value)) {
-  //       _markersSignal.value[spothole.position.toString()] = Marker(
-  //         markerId: MarkerId(spothole.position.toString()),
-  //         position: spothole.position,
-  //         icon: CustomIcons.potholeSignIcon,
-  //       );
-  //     }
-  //   }
-  //   // showOverViewPathPoints(_directionResult.value.routes![0].overviewPath!);
-  //   _markersSignal.value = {
-  //     ..._markersSignal.value,
-  //   };
-  // }
-
   void loadSpotholesInRoute(context) {
+    _spotholesInRouteList.value = [];
     databaseReference.child('spotholes').once().then(
       (DatabaseEvent event) {
         final spotholesMap = event.snapshot.value as Map?;
         if (spotholesMap != null) {
-          spotholesMap.forEach(
-            (key, value) {
-              final spothole =
-                  Spothole.fromJson(Map<String, dynamic>.from(value as Map));
-              if (isPointNearRoute(
-                  spothole.position, _routePolylineCoordinatesSignal.value)) {
-                spotholeInfoWindowController!
-                    .addSpotholeMarker(context, key, spothole);
-              }
-            },
-          );
+          final spotholeList = spotholesMap.entries.map((entry) {
+            final spothole = Spothole.fromJson(
+                Map<String, dynamic>.from(entry.value as Map));
+            spothole.id = entry.key;
+            return spothole;
+          }).toList();
 
-          // TODO código comentado do arquivo para teste do algoritmo de filtro dos riscos da rota
-          // spotholesList = spotholesMap.entries.map((entry) {
-          //   return Spothole.fromJson(Map<String, dynamic>.from(entry.value));
-          // }).toList();
+          _spotholesInRouteList.value = checkPointsAndStoreAccumulatedDistances(
+              spotholeList, _routePolylineCoordinatesSignal.value);
 
-          //TODO corrigir essa atualização aqui
+          for (Spothole spothole in _spotholesInRouteList.value) {
+            spotholeInfoWindowController!.addSpotholeMarker(context, spothole);
+          }
+
           _markersSignal.value = {
             ..._markersSignal.value,
           };
@@ -312,9 +308,10 @@ class RouteController {
     );
   }
 
-  void setupStepsPageView(int initialPage) {
+  void setupStepsPageView(int initialPage, String type) {
     _pageControllerSignal.value = PageController(initialPage: initialPage);
     _showStepsPageSignal.value = true;
+    _pageViewTypeSignal.value = type;
   }
 
   void plotManeuver(int stepIndex) {
@@ -343,7 +340,7 @@ class RouteController {
         )
       });
     } else {
-      updateCamera(step.startLocation!);
+      updateCameraGeoCoord(step.startLocation!);
       if (stepIndex == 0) {
         maneuverPoints = [sourceLocation, ...maneuverPoints];
         midpointIndex = 1;
@@ -376,14 +373,5 @@ class RouteController {
     });
 
     polylinesSignal.value = {...polylinesSignal.value};
-  }
-
-  dispose() {
-    _markersSignal.value = {};
-    _routePolylineCoordinatesSignal.value = [];
-    _directionResult.value = const DirectionsResult();
-    _routeAndStepsListSignal.value = [];
-    _googleMapController = null;
-    _googleMapControllerCompleter = Completer();
   }
 }

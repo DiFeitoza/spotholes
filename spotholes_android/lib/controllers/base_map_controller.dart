@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:signals/signals_flutter.dart';
@@ -150,8 +149,9 @@ class BaseMapController {
             (key, value) {
               final spothole =
                   Spothole.fromJson(Map<String, dynamic>.from(value as Map));
+              spothole.id = key;
               spotholeInfoWindowController!
-                  .addSpotholeMarker(context, key, spothole);
+                  .addSpotholeMarker(context, spothole);
             },
           );
         }
@@ -160,12 +160,11 @@ class BaseMapController {
   }
 
   void registerSpothole(context, position, category, type) {
-    final newSpothole = Spothole(DateTime.now().toUtc(), DateTime.now().toUtc(),
-        position, category, type);
     final newSpotHoleRef = dataBaseSpotholesRef.push();
+    final newSpothole = Spothole(DateTime.now().toUtc(), DateTime.now().toUtc(),
+        position, category, type, null, newSpotHoleRef.key);
     newSpotHoleRef.set(newSpothole.toJson());
-    spotholeInfoWindowController!
-        .addSpotholeMarker(context, newSpotHoleRef.key!, newSpothole);
+    spotholeInfoWindowController!.addSpotholeMarker(context, newSpothole);
   }
 
   void registerSpotholeModal(context, {LatLng? position}) {

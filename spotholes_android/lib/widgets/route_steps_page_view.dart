@@ -44,9 +44,9 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
           _currentPage = newPage;
           _cleanPolylines();
           if (_currentPage == 0) {
-            _routeController.updateCamera(_leg.startLocation!);
+            _routeController.updateCameraGeoCoord(_leg.startLocation!);
           } else if (_currentPage == _steps.length + 1) {
-            _routeController.updateCamera(_leg.endLocation!);
+            _routeController.updateCameraGeoCoord(_leg.endLocation!);
           } else {
             final stepIndex = _currentPage - 1;
             _routeController.plotManeuver(stepIndex);
@@ -67,15 +67,15 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
   void _initialStepCamera() {
     final initialPage = _pageController.initialPage;
     if (initialPage == 0) {
-      _routeController.updateCamera(_leg.startLocation!);
+      _routeController.updateCameraGeoCoord(_leg.startLocation!);
     } else if (initialPage == _steps.length + 1) {
-      _routeController.updateCamera(_leg.endLocation!);
+      _routeController.updateCameraGeoCoord(_leg.endLocation!);
     } else {
       final step = _steps[initialPage - 1];
       final maneuver = step.maneuver ?? 'straight';
       maneuver == 'straight'
           ? _routeController.newCameraLatLngBoundsFromStep(step)
-          : _routeController.updateCamera(step.startLocation!);
+          : _routeController.updateCameraGeoCoord(step.startLocation!);
     }
   }
 
@@ -136,7 +136,8 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
                       child: CustomIcons.sourceIconAsset,
                     ),
                     onTap: () => {
-                      _routeController.updateCamera(_leg.startLocation!),
+                      _routeController
+                          .updateCameraGeoCoord(_leg.startLocation!),
                     },
                   ),
                 ),
@@ -151,7 +152,7 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: ListTile(
                     onTap: () => {
-                      _routeController.updateCamera(_leg.endLocation!),
+                      _routeController.updateCameraGeoCoord(_leg.endLocation!),
                     },
                     title: Text(
                       'Destino: ${_leg.endAddress!}',
@@ -179,7 +180,8 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
                     onTap: () => {
                       maneuver == 'straight'
                           ? _routeController.newCameraLatLngBoundsFromStep(step)
-                          : _routeController.updateCamera(step.startLocation!),
+                          : _routeController
+                              .updateCameraGeoCoord(step.startLocation!),
                     },
                     leading: Icon(
                       icon,
