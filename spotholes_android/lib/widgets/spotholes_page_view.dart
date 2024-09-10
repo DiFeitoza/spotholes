@@ -95,7 +95,6 @@ class SpotholesStatePageView extends State<SpotholesPageView> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(width: 0.5),
-                // color: deepHole ? Colors.red[300] : Colors.yellow[300],
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
@@ -104,10 +103,6 @@ class SpotholesStatePageView extends State<SpotholesPageView> {
                     '${spothole.type.text}\n'
                     '${(spothole.distance! / 1000).toStringAsFixed(1)} km de distância\n'
                     '${Spothole.getFormattedTimeFromLastUpdate(spothole.dateOfUpdate)}',
-                    // style: TextStyle(
-                    //   fontWeight: FontWeight.w500,
-                    //   color: deepHole ? Colors.white : Colors.black,
-                    // ),
                   ),
                   leading: Container(
                     width: 55,

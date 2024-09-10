@@ -257,16 +257,10 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                         const SizedBox(width: 8),
                                         Container(
                                           padding: const EdgeInsets.all(6),
-                                          // decoration: const BoxDecoration(
-                                          //     color: Colors.blue,
-                                          //     shape: BoxShape.circle),
                                           child: Text(
                                             _steps.length < 100
                                                 ? '${_steps.length}'
                                                 : '+99',
-                                            //   style: const TextStyle(
-                                            //       color: Colors.white,
-                                            //       fontSize: 12),
                                           ),
                                         ),
                                       ],
@@ -283,18 +277,12 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                         const SizedBox(width: 8),
                                         Container(
                                           padding: const EdgeInsets.all(6),
-                                          // decoration: const BoxDecoration(
-                                          //     color: Colors.red,
-                                          //     shape: BoxShape.circle),
                                           child: Text(
                                             _spotholesInRouteListSignal
                                                         .value.length <
                                                     100
                                                 ? '${_spotholesInRouteListSignal.value.length}'
                                                 : '+99',
-                                            // style: const TextStyle(
-                                            //     color: Colors.white,
-                                            //     fontSize: 12),
                                           ),
                                         ),
                                       ],
@@ -502,9 +490,6 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                                     Spothole.getImageRiskByType(
                                                         spothole.type),
                                               ),
-                                              // trailing: deepHole
-                                              //     ? CustomIcons.potholeRedSignImage
-                                              //     : CustomIcons.potholeSignImage,
                                               selected: _selectedIndex == index,
                                               tileColor: _selectedIndex == index
                                                   ? Colors.amber
