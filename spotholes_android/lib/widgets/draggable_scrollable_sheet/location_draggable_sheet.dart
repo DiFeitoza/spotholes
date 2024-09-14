@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:spotholes_android/utilities/app_routes.dart';
 
 import '../../controllers/base_map_controller.dart';
 import '../button/custom_button.dart';
@@ -36,16 +37,6 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
   final _baseMapController = BaseMapController.instance;
   late final _canvasColor = Theme.of(context).canvasColor;
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  _loadRoute(destinationLocation) {
-    _baseMapController.removeMarkerByKey('longPressed');
-    _baseMapController.loadRoute(destinationLocation);
-  }
-
   void _registerSpotholeModal(BuildContext context) {
     widget.onRegister();
   }
@@ -55,7 +46,10 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
       CustomButton(
         label: 'Rota',
         bgColor: Colors.tealAccent.shade400,
-        onPressed: () => _loadRoute(position),
+        onPressed: () => Navigator.of(context).pushNamed(
+          AppRoutes.route,
+          arguments: [_baseMapController.currentLocationLatLng, position],
+        ),
       ),
       CustomButton(
         label: 'Alertar',

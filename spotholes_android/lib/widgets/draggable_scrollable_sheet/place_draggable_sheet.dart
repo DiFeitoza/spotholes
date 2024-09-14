@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:spotholes_android/package/google_places_flutter/model/place_details.dart';
+import 'package:spotholes_android/utilities/app_routes.dart';
 
 import '../../controllers/base_map_controller.dart';
 import '../button/custom_button.dart';
@@ -30,18 +31,14 @@ class PlaceDraggableSheet extends StatefulWidget {
 
 class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
   final ScrollController scrollController = ScrollController();
-  // late PlaceDraggableSheetController placeDraggableSheetController;
   final _baseMapController = BaseMapController.instance;
   late final _canvasColor = Theme.of(context).canvasColor;
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
   _loadRoute(position) {
-    _baseMapController.removeMarkerByKey('selectedPlace');
-    _baseMapController.loadRoute(position);
+    Navigator.of(context).pushNamed(
+      AppRoutes.route,
+      arguments: [_baseMapController.currentLocationLatLng, position],
+    );
   }
 
   List<Widget> _horizontalListButtons(BuildContext context, position) {

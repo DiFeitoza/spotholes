@@ -29,6 +29,7 @@ class AutoPressButtonState extends State<AutoPressButton>
 
   @override
   void initState() {
+    super.initState();
     _animationController = AnimationController(
       vsync: this,
       duration: Duration(seconds: widget.timerInSeconds),
@@ -43,7 +44,6 @@ class AutoPressButtonState extends State<AutoPressButton>
       }
     });
     _animationController.forward();
-    super.initState();
   }
 
   @override

@@ -30,7 +30,8 @@ enum Type {
 @JsonSerializable(fieldRename: FieldRename.snake)
 class Spothole {
   Spothole(this.dateOfRegister, this.dateOfUpdate, this.position, this.category,
-      this.type);
+      this.type,
+      [this.distance, this.id]);
 
   DateTime dateOfRegister;
   DateTime dateOfUpdate;
@@ -38,6 +39,10 @@ class Spothole {
   LatLng position;
   Category category;
   Type type;
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  double? distance;
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  String? id;
 
   factory Spothole.fromJson(Map<String, dynamic> json) =>
       _$SpotholeFromJson(json);

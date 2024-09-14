@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
+import 'package:spotholes_android/utilities/dark_mode_context_extension.dart';
 
 import '../controllers/base_map_controller.dart';
 import '../package/custom_info_window.dart';
@@ -24,7 +25,7 @@ class BaseMapPageState extends State<BaseMapPage> {
       _baseMapController.draggableScrollableSheetSignal;
 
   void _onMapCreated(mapController) {
-    _baseMapController.onMapCreated(mapController);
+    _baseMapController.onMapCreated(mapController, context);
   }
 
   void _onLongPress(LatLng position) {
@@ -33,53 +34,55 @@ class BaseMapPageState extends State<BaseMapPage> {
 
   @override
   void initState() {
-    _baseMapController.loadCurrentLocation();
-    _baseMapController.loadSpotholeMarkers(context);
     super.initState();
+    _baseMapController.loadCurrentLocation();
   }
 
   @override
   Widget build(BuildContext context) {
     return Watch(
-      (_) => _currentLocationSignal.value == null
-          ? const Center(
-              child: Text("Carregando..."),
-            )
-          : Stack(
-              children: [
-                GoogleMap(
-                  onMapCreated: _onMapCreated,
-                  initialCameraPosition: CameraPosition(
-                    target: LatLng(_currentLocationSignal.value!.latitude!,
-                        _currentLocationSignal.value!.longitude!),
-                    zoom: defaultZoomMap,
+      (_) => Scaffold(
+        backgroundColor: context.isDarkMode ? Colors.black : Colors.white,
+        body: SafeArea(
+          child: Container(
+            color: context.isDarkMode ? Colors.white : Colors.black,
+            child: _currentLocationSignal.value == null
+                ? const Center(
+                    child: Text("Carregando..."),
+                  )
+                : Stack(
+                    children: [
+                      GoogleMap(
+                        onMapCreated: _onMapCreated,
+                        initialCameraPosition: CameraPosition(
+                          target: LatLng(
+                            _currentLocationSignal.value!.latitude!,
+                            _currentLocationSignal.value!.longitude!,
+                          ),
+                          zoom: defaultZoomMap,
+                        ),
+                        onCameraIdle: () => _customInfoWindowControllerSignal
+                            .value.onCameraMove!(),
+                        markers: _markersSignal.value.values.toSet(),
+                        onLongPress: _onLongPress,
+                        zoomControlsEnabled: false,
+                        onTap: (position) => _customInfoWindowControllerSignal
+                            .value.hideInfoWindow!(),
+                        onCameraMove: (position) =>
+                            _customInfoWindowControllerSignal
+                                .value.onCameraMove!(),
+                      ),
+                      CustomInfoWindow(
+                        controller: _customInfoWindowControllerSignal.value,
+                      ),
+                      CustomFloatingActionButtonList(),
+                      const CustomHeader(),
+                      _draggableScrollableSheetSignal.value,
+                    ],
                   ),
-                  onCameraIdle: () =>
-                      _customInfoWindowControllerSignal.value.onCameraMove!(),
-                  polylines: {
-                    Polyline(
-                      polylineId: const PolylineId("route"),
-                      points: _baseMapController.routePolylineCoordinates,
-                      color: primaryColor,
-                      width: 6,
-                    ),
-                  },
-                  markers: _markersSignal.value.values.toSet(),
-                  onLongPress: _onLongPress,
-                  zoomControlsEnabled: false,
-                  onTap: (position) =>
-                      _customInfoWindowControllerSignal.value.hideInfoWindow!(),
-                  onCameraMove: (position) =>
-                      _customInfoWindowControllerSignal.value.onCameraMove!(),
-                ),
-                CustomInfoWindow(
-                  controller: _customInfoWindowControllerSignal.value,
-                ),
-                CustomFloatingActionButtonList(),
-                const CustomHeader(),
-                _draggableScrollableSheetSignal.value,
-              ],
-            ),
+          ),
+        ),
+      ),
     );
   }
 }
