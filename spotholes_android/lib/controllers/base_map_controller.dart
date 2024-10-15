@@ -11,9 +11,9 @@ import '../package/custom_info_window.dart';
 import '../package/google_places_flutter/model/place_details.dart'
     hide Location;
 import '../services/geocoding_service.dart';
+import '../services/location_service.dart';
 import '../services/service_locator.dart';
 import '../utilities/constants.dart';
-import '../utilities/custom_icons.dart';
 import '../utilities/custom_snackbar.dart';
 import '../widgets/draggable_scrollable_sheet/draggable_scrollable_sheet_type.dart';
 import '../widgets/info_window/marker_info_window.dart';
@@ -22,8 +22,18 @@ import 'spothole_info_window_controller.dart';
 
 class BaseMapController {
   BaseMapController._();
-  static final BaseMapController _instance = BaseMapController._();
+  static BaseMapController _instance = BaseMapController._();
   static BaseMapController get instance => _instance;
+
+  static void resetInstance() {
+    _instance = BaseMapController._();
+  }
+
+  Function? _dispose;
+
+  final LocationService _locationService = LocationService.instance;
+  late final Signal<LocationData?> _currentLocationSignal =
+      _locationService.currentLocationSignal;
 
   final databaseReference = getIt<DatabaseReference>();
   late final dataBaseSpotholesRef = databaseReference.child('spotholes');
@@ -42,10 +52,7 @@ class BaseMapController {
 
   final _geocodingService = GeocodingService.instance;
 
-  final _location = Location();
-
   final _markersSignal = Signal<Map<String, Marker>>({});
-  final _currentLocationSignal = Signal<LocationData?>(null);
 
   get markersSignal => _markersSignal;
   get currentLocationSignal => _currentLocationSignal;
@@ -54,10 +61,6 @@ class BaseMapController {
   get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
   get currentLocationLatLng => LatLng(_currentLocationSignal.value!.latitude!,
       _currentLocationSignal.value!.longitude!);
-
-  String currentLocationLatLngURLPattern() =>
-      "${_currentLocationSignal.value!.latitude!.toString()}"
-      "%2C${_currentLocationSignal.value!.longitude!.toString()}";
 
   void onMapCreated(mapController, context) {
     _googleMapControllerCompleter.complete(mapController);
@@ -83,27 +86,24 @@ class BaseMapController {
   }
 
   void loadCurrentLocation() async {
-    _currentLocationSignal.value = await _location.getLocation();
-    loadCurrentLocationMark();
-    _location.onLocationChanged.listen((newLoc) {
-      _currentLocationSignal.value = newLoc;
-      loadCurrentLocationMark();
-    });
     _googleMapController = await _googleMapControllerCompleter.future;
     centerView();
+    listenCurrentLocation();
   }
 
-  void loadCurrentLocationMark() {
-    final newMarker = Marker(
-      markerId: const MarkerId("currentLocation"),
-      icon: CustomIcons.currentLocationIcon,
-      position: currentLocationLatLng,
-      onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
-          const MarkerInfoWindow(
-              title: 'Localização', textContent: 'Você está aqui!'),
-          currentLocationLatLng),
+  void listenCurrentLocation() async {
+    _dispose = effect(
+      () {
+        if (_currentLocationSignal.value != null) {
+          untracked(
+            () => _locationService.loadCurrentLocationMark(
+              _markersSignal,
+              _customInfoWindowControllerSignal,
+            ),
+          );
+        }
+      },
     );
-    _markersSignal.value['currentLocationMarker'] = newMarker;
   }
 
   changeDraggableSheet(DraggableScrollableSheetType type) {
@@ -154,6 +154,7 @@ class BaseMapController {
                   .addSpotholeMarker(context, spothole);
             },
           );
+          _markersSignal.value = {..._markersSignal.value};
         }
       },
     );
@@ -165,6 +166,7 @@ class BaseMapController {
         position, category, type, null, newSpotHoleRef.key);
     newSpotHoleRef.set(newSpothole.toJson());
     spotholeInfoWindowController!.addSpotholeMarker(context, newSpothole);
+    _markersSignal.value = {..._markersSignal.value};
   }
 
   void registerSpotholeModal(context, {LatLng? position}) {
@@ -219,5 +221,9 @@ class BaseMapController {
         onRegister: () => registerSpotholeModal(context, position: position),
       ),
     );
+  }
+
+  dispose() {
+    _dispose!();
   }
 }

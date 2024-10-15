@@ -5,6 +5,7 @@ import '../config/environment_config.dart';
 import '../package/google_places_flutter/google_places_flutter.dart';
 import '../package/google_places_flutter/model/place_details.dart';
 import '../package/google_places_flutter/model/prediction.dart';
+import '../services/location_service.dart';
 
 class CustomHeader extends StatelessWidget {
   const CustomHeader({super.key});
@@ -50,6 +51,7 @@ class CustomSearchContainer extends StatelessWidget {
 class CustomTextField extends StatelessWidget {
   CustomTextField({super.key});
   final _baseMapController = BaseMapController.instance;
+  final _locationService = LocationService.instance;
   late final _textEditingController = _baseMapController.textEditingController;
   late final searchBarfocusNode = _baseMapController.searchBarFocusNode;
 
@@ -60,7 +62,7 @@ class CustomTextField extends StatelessWidget {
         textEditingController: _textEditingController,
         googleAPIKey: EnvironmentConfig.googleApiKey!,
         currentLocationLatLngURLPattern:
-            _baseMapController.currentLocationLatLngURLPattern,
+            _locationService.currentLocationLatLngURLPattern,
         boxDecoration: const BoxDecoration(),
         inputDecoration: const InputDecoration(
           prefixIcon: Padding(

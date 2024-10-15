@@ -39,6 +39,12 @@ class BaseMapPageState extends State<BaseMapPage> {
   }
 
   @override
+  void dispose() {
+    _baseMapController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Watch(
       (_) => Scaffold(

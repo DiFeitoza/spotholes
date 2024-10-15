@@ -69,6 +69,7 @@ class SpotholeInfoWindowController {
     spothole.type = type;
     spothole.id = spotholeId;
     addSpotholeMarker(context, spothole);
+    _markersSignal.value = {..._markersSignal.value};
     _markersSignal.value[spotholeId]!.onTap!();
     updateCameraGoogleMapsController(spothole.position);
     spotholeRef.set(spothole.toJson());
@@ -113,5 +114,6 @@ class SpotholeInfoWindowController {
 
   void removeMarkerByid(spotholeId) {
     _markersSignal.value.remove(spotholeId);
+    _markersSignal.value = {..._markersSignal.value};
   }
 }
