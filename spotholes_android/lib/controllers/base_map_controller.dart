@@ -6,19 +6,17 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:signals/signals_flutter.dart';
 
-import '../models/spothole.dart';
 import '../package/custom_info_window.dart';
 import '../package/google_places_flutter/model/place_details.dart'
     hide Location;
 import '../services/geocoding_service.dart';
 import '../services/location_service.dart';
 import '../services/service_locator.dart';
+import '../services/spothole_service.dart';
 import '../utilities/constants.dart';
 import '../utilities/custom_snackbar.dart';
 import '../widgets/draggable_scrollable_sheet/draggable_scrollable_sheet_type.dart';
 import '../widgets/info_window/marker_info_window.dart';
-import '../widgets/modal/register_spothole_modal.dart';
-import 'spothole_info_window_controller.dart';
 
 class BaseMapController {
   BaseMapController._();
@@ -42,7 +40,7 @@ class BaseMapController {
   final _googleMapControllerCompleter = Completer();
   final _customInfoWindowControllerSignal =
       Signal<CustomInfoWindowController>(CustomInfoWindowController());
-  SpotholeInfoWindowController? spotholeInfoWindowController;
+  SpotholeService? spotholeService;
   final _textEditingController = TextEditingController();
   final _searchBarFocusNode = FocusNode();
 
@@ -65,9 +63,11 @@ class BaseMapController {
   void onMapCreated(mapController, context) {
     _googleMapControllerCompleter.complete(mapController);
     _customInfoWindowControllerSignal.value.googleMapController = mapController;
-    spotholeInfoWindowController = SpotholeInfoWindowController(
-        _customInfoWindowControllerSignal, _markersSignal);
-    loadSpotholeMarkers(context);
+    spotholeService = SpotholeService(
+      _markersSignal,
+      _customInfoWindowControllerSignal,
+    );
+    spotholeService!.loadSpotholeMarkers(context);
   }
 
   void updateCameraGoogleMapsController(position, [zoom = defaultZoomMap]) {
@@ -141,47 +141,12 @@ class BaseMapController {
   }
 
   void loadSpotholeMarkers(context) {
-    databaseReference.child('spotholes').once().then(
-      (DatabaseEvent event) {
-        final spotholesMap = event.snapshot.value as Map?;
-        if (spotholesMap != null) {
-          spotholesMap.forEach(
-            (key, value) {
-              final spothole =
-                  Spothole.fromJson(Map<String, dynamic>.from(value as Map));
-              spothole.id = key;
-              spotholeInfoWindowController!
-                  .addSpotholeMarker(context, spothole);
-            },
-          );
-          _markersSignal.value = {..._markersSignal.value};
-        }
-      },
-    );
-  }
-
-  void registerSpothole(context, position, category, type) {
-    final newSpotHoleRef = dataBaseSpotholesRef.push();
-    final newSpothole = Spothole(DateTime.now().toUtc(), DateTime.now().toUtc(),
-        position, category, type, null, newSpotHoleRef.key);
-    newSpotHoleRef.set(newSpothole.toJson());
-    spotholeInfoWindowController!.addSpotholeMarker(context, newSpothole);
-    _markersSignal.value = {..._markersSignal.value};
+    spotholeService!.loadSpotholeMarkers(context);
   }
 
   void registerSpotholeModal(context, {LatLng? position}) {
     final latLng = position ?? currentLocationLatLng;
-    showModalBottomSheet(
-      context: context,
-      builder: (builder) {
-        return RegisterSpotholeModal(
-          title: "Para alertar um risco, selecione:",
-          textOnRegisterButton: "Adicionar",
-          onRegister: (riskCategory, type) =>
-              registerSpothole(context, latLng, riskCategory, type),
-        );
-      },
-    );
+    spotholeService!.registerSpotholeModal(context, latLng);
   }
 
   void onLongPress(BuildContext context, LatLng position) async {
@@ -218,7 +183,8 @@ class BaseMapController {
       DraggableScrollableSheetTypes.location(
         position: position,
         formattedPlacemark: formattedPlacemark,
-        onRegister: () => registerSpotholeModal(context, position: position),
+        onRegister: () =>
+            spotholeService!.registerSpotholeModal(context, position),
       ),
     );
   }

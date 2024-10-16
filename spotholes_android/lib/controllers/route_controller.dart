@@ -8,15 +8,14 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 
 import '../config/environment_config.dart';
-import '../controllers/spothole_info_window_controller.dart';
 import '../models/spothole.dart';
 import '../package/custom_info_window.dart';
 import '../services/service_locator.dart';
+import '../services/spothole_service.dart';
 import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
 import '../utilities/maneuver_arrow_polyline.dart';
 import '../utilities/map_utils.dart';
-import '../utilities/point_on_route_haversine.dart';
 import '../widgets/info_window/marker_info_window.dart';
 
 class RouteController {
@@ -33,13 +32,18 @@ class RouteController {
   final _spotholesInRouteList = Signal<List<Spothole>>([]);
 
   GoogleMapController? _googleMapController;
+  get googleMapController => _googleMapController;
+  set googleMapController(mapController) =>
+      _googleMapController = mapController;
+
   final _googleMapControllerCompleter = Completer();
+  get googleMapControllerCompleter => _googleMapControllerCompleter;
 
   final _customInfoWindowControllerSignal =
       Signal<CustomInfoWindowController>(CustomInfoWindowController());
   get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
 
-  SpotholeInfoWindowController? spotholeInfoWindowController;
+  SpotholeService? _spotholeService;
 
   final _markersSignal = Signal<Map<String, Marker>>({});
   final _routePolylineCoordinatesSignal = Signal<List<LatLng>>([]);
@@ -71,8 +75,8 @@ class RouteController {
   void onMapCreated(mapController) {
     _googleMapControllerCompleter.complete(mapController);
     _customInfoWindowControllerSignal.value.googleMapController = mapController;
-    spotholeInfoWindowController = SpotholeInfoWindowController(
-        _customInfoWindowControllerSignal, _markersSignal);
+    _spotholeService =
+        SpotholeService(_markersSignal, _customInfoWindowControllerSignal);
   }
 
   GeoCoord latLngToGeoCoord(LatLng latLng) =>
@@ -281,31 +285,8 @@ class RouteController {
   }
 
   void loadSpotholesInRoute(context) {
-    _spotholesInRouteList.value = [];
-    databaseReference.child('spotholes').once().then(
-      (DatabaseEvent event) {
-        final spotholesMap = event.snapshot.value as Map?;
-        if (spotholesMap != null) {
-          final spotholeList = spotholesMap.entries.map((entry) {
-            final spothole = Spothole.fromJson(
-                Map<String, dynamic>.from(entry.value as Map));
-            spothole.id = entry.key;
-            return spothole;
-          }).toList();
-
-          _spotholesInRouteList.value = checkPointsAndStoreAccumulatedDistances(
-              spotholeList, _routePolylineCoordinatesSignal.value);
-
-          for (Spothole spothole in _spotholesInRouteList.value) {
-            spotholeInfoWindowController!.addSpotholeMarker(context, spothole);
-          }
-
-          _markersSignal.value = {
-            ..._markersSignal.value,
-          };
-        }
-      },
-    );
+    _spotholesInRouteList.value = _spotholeService!
+        .loadSpotholesInRoute(context, routePolylineCoordinatesSignal.value);
   }
 
   void setupStepsPageView(int initialPage, String type) {
@@ -373,5 +354,32 @@ class RouteController {
     });
 
     polylinesSignal.value = {...polylinesSignal.value};
+  }
+
+  RouteController copy() {
+    var copy = RouteController._();
+    copy._spotholesInRouteList.value = List.from(_spotholesInRouteList.value);
+    copy._markersSignal.value = Map.from(_markersSignal.value);
+    copy._routePolylineCoordinatesSignal.value =
+        List.from(_routePolylineCoordinatesSignal.value);
+    copy._polylinesSignal.value = Map.from(_polylinesSignal.value);
+    copy._routePolyline.value = _routePolyline.value;
+    copy._directionResult.value = _directionResult.value;
+    copy._routeAndStepsListSignal.value =
+        List.from(_routeAndStepsListSignal.value);
+    // TODO Removi todos os casos de valores que são inicializados nulo no RouteController, assim eles são reinicializados
+    // copy._googleMapController = null;
+    // copy._customInfoWindowControllerSignal.value =
+    //     _customInfoWindowControllerSignal.value;
+    // copy._spotholeService = _spotholeService;
+    // copy._showStepsPageSignal.value = _showStepsPageSignal.value;
+    // copy._pageViewTypeSignal.value = _pageViewTypeSignal.value;
+    // Torno null para não utilizar o msm controller em duas PageView diferentes
+    // copy._pageControllerSignal.value = _pageControllerSignal.value;
+    return copy;
+  }
+
+  static RouteController getCopy() {
+    return instance.copy();
   }
 }
