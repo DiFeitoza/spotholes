@@ -5,6 +5,7 @@ import 'package:spotholes_android/widgets/spotholes_page_view.dart';
 
 import '../controllers/route_controller.dart';
 import '../package/custom_info_window.dart';
+import '../utilities/app_routes.dart';
 import '../utilities/constants.dart';
 import '../utilities/dark_mode_context_extension.dart';
 import '../widgets/button/custom_button.dart';
@@ -53,7 +54,10 @@ class _RoutePageState extends State<RoutePage> {
       CustomButton(
         label: 'Iniciar viagem',
         bgColor: Colors.tealAccent.shade400,
-        onPressed: () => {},
+        onPressed: () => Navigator.of(context).pushNamed(
+          AppRoutes.navigation,
+          arguments: [RouteController.getCopy()],
+        ),
       ),
       CustomButton(
         label: 'Centralizar',

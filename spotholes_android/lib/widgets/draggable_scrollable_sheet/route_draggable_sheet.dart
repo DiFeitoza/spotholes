@@ -6,6 +6,7 @@ import 'package:spotholes_android/controllers/route_controller.dart';
 import 'package:spotholes_android/widgets/bullet_list.dart';
 
 import '../../models/spothole.dart';
+import '../../utilities/app_routes.dart';
 import '../../utilities/custom_icons.dart';
 import '../../utilities/maneuver_icons.dart';
 import '../button/custom_button.dart';
@@ -125,7 +126,10 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
       CustomButton(
         label: 'Iniciar viagem',
         bgColor: Colors.tealAccent.shade400,
-        onPressed: () => {},
+        onPressed: () => Navigator.of(context).pushNamed(
+          AppRoutes.navigation,
+          arguments: [RouteController.getCopy()],
+        ),
       ),
       CustomButton(
         label: 'Centralizar',

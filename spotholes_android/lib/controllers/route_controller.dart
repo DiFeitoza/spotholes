@@ -6,6 +6,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart' as fpp;
 import 'package:google_directions_api/google_directions_api.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
+import 'package:spotholes_android/package/extensions/directions_result_extension.dart';
 
 import '../config/environment_config.dart';
 import '../models/spothole.dart';
@@ -17,6 +18,12 @@ import '../utilities/custom_icons.dart';
 import '../utilities/maneuver_arrow_polyline.dart';
 import '../utilities/map_utils.dart';
 import '../widgets/info_window/marker_info_window.dart';
+
+class RoutePointsData {
+  List<LatLng> points;
+  List<int> stepsIndexes;
+  RoutePointsData(this.points, this.stepsIndexes);
+}
 
 class RouteController {
   RouteController._();
@@ -46,21 +53,24 @@ class RouteController {
   SpotholeService? _spotholeService;
 
   final _markersSignal = Signal<Map<String, Marker>>({});
+  // Store all polyline points
   final _routePolylineCoordinatesSignal = Signal<List<LatLng>>([]);
+  // Store all polylines
   final _polylinesSignal = Signal<Map<String, Polyline>>({});
-  final _routePolyline =
-      Signal<Polyline>(const Polyline(polylineId: PolylineId('null')));
+  // Store a result from a request for a route on Google Directions API
   final _directionResult = Signal<DirectionsResult>(const DirectionsResult());
+  final Signal<List<Step>> _routeStepsLatLng = Signal<List<Step>>([]);
+  Signal<List<Step>> get routeStepsLatLng => _routeStepsLatLng;
 
-  final _routeAndStepsListSignal = Signal<List<String>>([]);
+  // Store steps' start indexes inside a route polyline
+  List<int> _stepsIndexes = [];
+  get stepsIndexes => _stepsIndexes;
 
   Signal<List<Spothole>> get spotholesInRouteList => _spotholesInRouteList;
   Signal<Map<String, Marker>> get markersSignal => _markersSignal;
   Signal<List<LatLng>> get routePolylineCoordinatesSignal =>
       _routePolylineCoordinatesSignal;
   Signal<Map<String, Polyline>> get polylinesSignal => _polylinesSignal;
-  Signal<Polyline> get routePolyline => _routePolyline;
-  Signal<List<String>> get routeAndStepsListSignal => _routeAndStepsListSignal;
   Signal<DirectionsResult> get directionResult => _directionResult;
 
   final _showStepsPageSignal = signal(false);
@@ -132,69 +142,6 @@ class RouteController {
     );
   }
 
-  // TODO just for dev tests!
-  List<String> routeToString(DirectionsResult response) {
-    List<String> strSteps = [];
-    String strRoute = '';
-    LatLng northeastBound =
-        geoCoordToLatLng(response.routes![0].bounds!.northeast);
-    LatLng southwestBound =
-        geoCoordToLatLng(response.routes![0].bounds!.southwest);
-    //BOUNDS
-    strRoute += 'northeastBound: ${latLngToString(northeastBound)}\n'
-        'southwestBound: ${latLngToString(southwestBound)}\n';
-    //SUMARY
-    strRoute += 'summary: ${response.routes![0].summary}\n';
-    //OVERVIEW PATH
-    List<GeoCoord> points = response.routes![0].overviewPath!;
-    strRoute += 'overviewPath: ';
-    for (GeoCoord geoCoord in points) {
-      strRoute += '${geoCoordToString(geoCoord)}, ';
-    }
-    strRoute += '\n';
-    //WARNINGS
-    final warnings = response.routes![0].warnings;
-    strRoute += 'Warnings:';
-    if (warnings != null) {
-      for (String? warning in warnings) {
-        strRoute += '${warning!}, ';
-      }
-    }
-    strRoute += '\n';
-    strSteps.add(strRoute);
-    //STEPS
-    List<Step> steps = response.routes![0].legs![0].steps!;
-    for (Step step in steps) {
-      strSteps.add('Distância: ${step.distance}\n'
-          'Duração: ${step.duration!.text}\n'
-          'Start Location: ${geoCoordToString(step.startLocation!)}\n'
-          'End Location: ${geoCoordToString(step.endLocation!)}\n'
-          'Instructions: ${step.instructions}\n'
-          'Maneuver: ${step.maneuver}\n'
-          'Transit: ${step.transit}\n'
-          'Travel Mode: ${step.travelMode}\n');
-    }
-    //Update da string de ROTA e STEPS
-    _routeAndStepsListSignal.value = strSteps;
-    return strSteps;
-  }
-
-  // TODO just for dev tests!
-  void showOverViewPathPoints(List<LatLng> points) {
-    Map<String, Marker> markers = {};
-    for (LatLng point in points) {
-      String strPoint = latLngToString(point);
-      markers[strPoint] = Marker(
-        markerId: MarkerId(strPoint),
-        position: point,
-      );
-    }
-    _markersSignal.value = {
-      ..._markersSignal.value,
-      ...markers,
-    };
-  }
-
   List<LatLng> decodePolyline(String encoded) {
     return fpp.PolylinePoints()
         .decodePolyline(encoded)
@@ -202,13 +149,19 @@ class RouteController {
         .toList();
   }
 
-  List<LatLng> extractPointsFromSteps(List<Step> steps) {
+  RoutePointsData decodePointsFromSteps(List<Step> steps) {
     List<LatLng> routePoints = [];
+    List<LatLng> stepPoints = [];
+    List<int> stepsIndexes = [];
+    int currentIndex = 0;
     for (var step in steps) {
       var polyline = step.polyline!.points;
-      routePoints.addAll(decodePolyline(polyline!));
+      stepPoints = decodePolyline(polyline!);
+      routePoints.addAll(stepPoints);
+      stepsIndexes.add(currentIndex);
+      currentIndex += stepPoints.length;
     }
-    return routePoints;
+    return RoutePointsData(routePoints, stepsIndexes);
   }
 
   Future<void> loadRouteWithLegsAndSteps(
@@ -229,9 +182,11 @@ class RouteController {
       (DirectionsResult response, DirectionsStatus? status) async {
         if (status == DirectionsStatus.ok) {
           _directionResult.value = response;
-          final steps = response.routes!.first.legs!.first.steps;
-          final points = extractPointsFromSteps(steps!);
-          _routePolylineCoordinatesSignal.value = points;
+          _routeStepsLatLng.value = response.routes!.first.legs!.first.steps!;
+          final routePointsData =
+              decodePointsFromSteps(_routeStepsLatLng.value);
+          _routePolylineCoordinatesSignal.value = routePointsData.points;
+          _stepsIndexes = routePointsData.stepsIndexes;
           _polylinesSignal.value['route'] = Polyline(
             polylineId: const PolylineId("route"),
             points: _routePolylineCoordinatesSignal.value,
@@ -295,9 +250,9 @@ class RouteController {
     _pageViewTypeSignal.value = type;
   }
 
-  void plotManeuver(int stepIndex) {
-    final steps = _directionResult.value.routes![0].legs![0].steps;
-    final step = steps![stepIndex];
+  void plotManeuverPolyline(int stepIndex, {bool updateCamera = true}) {
+    final steps = _routeStepsLatLng.value;
+    final step = steps[stepIndex];
     final maneuver = step.maneuver ?? 'straight';
     List<LatLng> maneuverPoints = [];
     List<LatLng> arrowPoints = [];
@@ -308,7 +263,7 @@ class RouteController {
     maneuverPoints = decodePolyline(step.polyline!.points!);
 
     if (maneuver == 'straight') {
-      newCameraLatLngBoundsFromStep(step);
+      if (updateCamera) newCameraLatLngBoundsFromStep(step);
       polylinesSignal.value.addAll({
         'straightPath': Polyline(
           polylineId: const PolylineId('straightPath'),
@@ -321,7 +276,7 @@ class RouteController {
         )
       });
     } else {
-      updateCameraGeoCoord(step.startLocation!);
+      if (updateCamera) updateCameraGeoCoord(step.startLocation!);
       if (stepIndex == 0) {
         maneuverPoints = [sourceLocation, ...maneuverPoints];
         midpointIndex = 1;
@@ -356,18 +311,42 @@ class RouteController {
     polylinesSignal.value = {...polylinesSignal.value};
   }
 
-  RouteController copy() {
+  void clearManeuverPolyline() {
+    polylinesSignal.value.remove('maneuverArrow');
+    polylinesSignal.value.remove('straightPath');
+    polylinesSignal.value = {...polylinesSignal.value};
+  }
+
+  RouteController isolatedCopy() {
     var copy = RouteController._();
     copy._spotholesInRouteList.value = List.from(_spotholesInRouteList.value);
     copy._markersSignal.value = Map.from(_markersSignal.value);
+    copy._polylinesSignal.value = Map.from(_polylinesSignal.value);
     copy._routePolylineCoordinatesSignal.value =
         List.from(_routePolylineCoordinatesSignal.value);
-    copy._polylinesSignal.value = Map.from(_polylinesSignal.value);
-    copy._routePolyline.value = _routePolyline.value;
+    // Dica: Em tipos complexos, a nova instância do tipo pai, por si só não resolve pois as partes internas vão ser cópias por referência, a não ser que crie toda a estrutura interna até chegar nos objetos que precisa fazer a cópia por passagem, em vez de referência
+    copy._directionResult.value = _directionResult.value.copyWith();
+    copy._stepsIndexes = List.of(_stepsIndexes);
+    copy._routeStepsLatLng.value = List.from(_routeStepsLatLng.value);
+    copy._pageControllerSignal.value = PageController(initialPage: 1);
+    // Removi todos os casos de valores que são inicializados nulo no RouteController, assim eles são reinicializados e não retorna erro por duplicidade, como no caso
+    return copy;
+  }
+
+  RouteController copy() {
+    var copy = RouteController._();
+    copy._spotholesInRouteList.value = _spotholesInRouteList.value;
+    copy._markersSignal.value = _markersSignal.value;
+    copy._polylinesSignal.value = _polylinesSignal.value;
+    copy._routePolylineCoordinatesSignal.value =
+        _routePolylineCoordinatesSignal.value;
     copy._directionResult.value = _directionResult.value;
-    copy._routeAndStepsListSignal.value =
-        List.from(_routeAndStepsListSignal.value);
-    // TODO Removi todos os casos de valores que são inicializados nulo no RouteController, assim eles são reinicializados
+    copy._stepsIndexes = _stepsIndexes;
+    copy._routeStepsLatLng.value = _routeStepsLatLng.value;
+    // Removi todos os casos de valores que são inicializados nulo no RouteController, assim eles são reinicializados e não retorna erro por duplicidade, como no caso de widgets que precisam de controladores únicos
+    // copy._pageControllerSignal.value = PageController(initialPage: 1);
+    // copy._routeAndStepsListSignal.value =
+    //     List.from(_routeAndStepsListSignal.value);
     // copy._googleMapController = null;
     // copy._customInfoWindowControllerSignal.value =
     //     _customInfoWindowControllerSignal.value;
@@ -375,11 +354,73 @@ class RouteController {
     // copy._showStepsPageSignal.value = _showStepsPageSignal.value;
     // copy._pageViewTypeSignal.value = _pageViewTypeSignal.value;
     // Torno null para não utilizar o msm controller em duas PageView diferentes
-    // copy._pageControllerSignal.value = _pageControllerSignal.value;
     return copy;
   }
 
   static RouteController getCopy() {
     return instance.copy();
   }
+
+  // // TODO just for dev tests!
+  // List<String> routeToString(DirectionsResult response) {
+  //   List<String> strSteps = [];
+  //   String strRoute = '';
+  //   LatLng northeastBound =
+  //       geoCoordToLatLng(response.routes![0].bounds!.northeast);
+  //   LatLng southwestBound =
+  //       geoCoordToLatLng(response.routes![0].bounds!.southwest);
+  //   //BOUNDS
+  //   strRoute += 'northeastBound: ${latLngToString(northeastBound)}\n'
+  //       'southwestBound: ${latLngToString(southwestBound)}\n';
+  //   //SUMARY
+  //   strRoute += 'summary: ${response.routes![0].summary}\n';
+  //   //OVERVIEW PATH
+  //   List<GeoCoord> points = response.routes![0].overviewPath!;
+  //   strRoute += 'overviewPath: ';
+  //   for (GeoCoord geoCoord in points) {
+  //     strRoute += '${geoCoordToString(geoCoord)}, ';
+  //   }
+  //   strRoute += '\n';
+  //   //WARNINGS
+  //   final warnings = response.routes![0].warnings;
+  //   strRoute += 'Warnings:';
+  //   if (warnings != null) {
+  //     for (String? warning in warnings) {
+  //       strRoute += '${warning!}, ';
+  //     }
+  //   }
+  //   strRoute += '\n';
+  //   strSteps.add(strRoute);
+  //   //STEPS
+  //   List<Step> steps = response.routes![0].legs![0].steps!;
+  //   for (Step step in steps) {
+  //     strSteps.add('Distância: ${step.distance}\n'
+  //         'Duração: ${step.duration!.text}\n'
+  //         'Start Location: ${geoCoordToString(step.startLocation!)}\n'
+  //         'End Location: ${geoCoordToString(step.endLocation!)}\n'
+  //         'Instructions: ${step.instructions}\n'
+  //         'Maneuver: ${step.maneuver}\n'
+  //         'Transit: ${step.transit}\n'
+  //         'Travel Mode: ${step.travelMode}\n');
+  //   }
+  //   //Update da string de ROTA e STEPS
+  //   _routeAndStepsListSignal.value = strSteps;
+  //   return strSteps;
+  // }
+
+  // // TODO just for dev tests!
+  // void showOverViewPathPoints(List<LatLng> points) {
+  //   Map<String, Marker> markers = {};
+  //   for (LatLng point in points) {
+  //     String strPoint = latLngToString(point);
+  //     markers[strPoint] = Marker(
+  //       markerId: MarkerId(strPoint),
+  //       position: point,
+  //     );
+  //   }
+  //   _markersSignal.value = {
+  //     ..._markersSignal.value,
+  //     ...markers,
+  //   };
+  // }
 }

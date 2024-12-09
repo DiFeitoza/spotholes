@@ -5,3 +5,7 @@ const double defaultPadding = 16.0;
 
 //Google Maps
 const double defaultZoomMap = 18.5;
+const double defaultNavigationTilt = 90;
+
+// Navigation
+const double routeDeviationTolerance = 12;

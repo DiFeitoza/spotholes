@@ -29,7 +29,7 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
 
   final _routeController = RouteController.instance;
   late final _leg = widget.route.legs![0];
-  late final _steps = _leg.steps!;
+  late final _steps = _routeController.routeStepsLatLng;
 
   @override
   void initState() {
@@ -45,11 +45,11 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
           _cleanPolylines();
           if (_currentPage == 0) {
             _routeController.updateCameraGeoCoord(_leg.startLocation!);
-          } else if (_currentPage == _steps.length + 1) {
+          } else if (_currentPage == _steps.value.length + 1) {
             _routeController.updateCameraGeoCoord(_leg.endLocation!);
           } else {
             final stepIndex = _currentPage - 1;
-            _routeController.plotManeuver(stepIndex);
+            _routeController.plotManeuverPolyline(stepIndex);
           }
         }
       },
@@ -68,10 +68,10 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
     final initialPage = _pageController.initialPage;
     if (initialPage == 0) {
       _routeController.updateCameraGeoCoord(_leg.startLocation!);
-    } else if (initialPage == _steps.length + 1) {
+    } else if (initialPage == _steps.value.length + 1) {
       _routeController.updateCameraGeoCoord(_leg.endLocation!);
     } else {
-      final step = _steps[initialPage - 1];
+      final step = _steps.value[initialPage - 1];
       final maneuver = step.maneuver ?? 'straight';
       maneuver == 'straight'
           ? _routeController.newCameraLatLngBoundsFromStep(step)
@@ -116,7 +116,7 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
       child: InkWell(
         child: ExpandablePageView.builder(
           controller: _pageController,
-          itemCount: _steps.length + 2,
+          itemCount: _steps.value.length + 2,
           itemBuilder: (context, index) {
             if (index == 0) {
               return Container(
@@ -142,7 +142,7 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
                   ),
                 ),
               );
-            } else if (index == _steps.length + 1) {
+            } else if (index == _steps.value.length + 1) {
               return Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
@@ -166,7 +166,7 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
                 ),
               );
             } else {
-              final step = _steps[index - 1];
+              final step = _steps.value[index - 1];
               final maneuver = step.maneuver ?? 'straight';
               final icon = maneuverIcons[maneuver] ?? Icons.directions;
               return Container(
