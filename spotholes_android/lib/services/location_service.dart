@@ -14,8 +14,8 @@ class LocationService {
   static LocationService get instance => _instance;
 
   final _location = Location();
-  final _currentLocationSignal = Signal<LocationData?>(null);
 
+  final _currentLocationSignal = Signal<LocationData?>(null);
   get currentLocationSignal => _currentLocationSignal;
   get currentLocationLatLng => LatLng(_currentLocationSignal.value!.latitude!,
       _currentLocationSignal.value!.longitude!);
@@ -45,6 +45,10 @@ class LocationService {
   }
 
   void _startLocationMonitoring() async {
+    _location.changeSettings(
+      interval: 100,
+      distanceFilter: 5,
+    );
     _currentLocationSignal.value = await _location.getLocation();
     _location.onLocationChanged.listen(
       (newLoc) {

@@ -63,7 +63,6 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
   @override
   Widget build(BuildContext context) {
     Result placeDetailsResult = widget.placeDetails.result!;
-
     return DraggableScrollableSheet(
       maxChildSize: 0.6,
       minChildSize: 0.26,

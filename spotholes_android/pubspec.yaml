@@ -55,6 +55,7 @@ dependencies:
   google_directions_api: ^0.10.0
   flutter_html: ^3.0.0-beta.2
   expandable_page_view: ^1.0.17
+  maps_toolkit: ^3.0.0
 
 dev_dependencies:
   flutter_test:

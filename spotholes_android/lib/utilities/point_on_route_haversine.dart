@@ -23,18 +23,24 @@ double haversine(LatLng point1, LatLng point2) {
 double pointToSegmentDistance(LatLng point, LatLng start, LatLng end) {
   final A = [
     point.latitude - start.latitude,
-    point.longitude - start.longitude
+    point.longitude - start.longitude,
   ];
-  final B = [end.latitude - start.latitude, end.longitude - start.longitude];
+  final B = [
+    end.latitude - start.latitude,
+    end.longitude - start.longitude,
+  ];
   final bMagnitude = B[0] * B[0] + B[1] * B[1];
   if (bMagnitude == 0) {
     return haversine(point, start);
   }
-
-  final t = max(0, min(1, (A[0] * B[0] + A[1] * B[1]) / bMagnitude));
-  final projection =
-      LatLng(start.latitude + t * B[0], start.longitude + t * B[1]);
-
+  final t = max(
+    0,
+    min(1, (A[0] * B[0] + A[1] * B[1]) / bMagnitude),
+  );
+  final projection = LatLng(
+    start.latitude + t * B[0],
+    start.longitude + t * B[1],
+  );
   return haversine(point, projection);
 }
 
