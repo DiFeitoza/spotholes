@@ -23,19 +23,15 @@ class BaseMapPageState extends State<BaseMapPage> {
   late final _currentLocationSignal = _baseMapController.currentLocationSignal;
   late final _draggableScrollableSheetSignal =
       _baseMapController.draggableScrollableSheetSignal;
+  late final _isProgrammaticMove = _baseMapController.isProgrammaticMove;
+  late final _isTrackingLocation = _baseMapController.isTrackingLocation;
 
   void _onMapCreated(mapController) {
-    _baseMapController.onMapCreated(mapController, context);
+    _baseMapController.onMapCreated(mapController);
   }
 
   void _onLongPress(LatLng position) {
     _baseMapController.onLongPress(context, position);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _baseMapController.loadCurrentLocation();
   }
 
   @override
@@ -74,9 +70,17 @@ class BaseMapPageState extends State<BaseMapPage> {
                         zoomControlsEnabled: false,
                         onTap: (position) => _customInfoWindowControllerSignal
                             .value.hideInfoWindow!(),
-                        onCameraMove: (position) =>
-                            _customInfoWindowControllerSignal
-                                .value.onCameraMove!(),
+                        onCameraMove: (position) {
+                          _customInfoWindowControllerSignal
+                              .value.onCameraMove!();
+                        },
+                        onCameraMoveStarted: () {
+                          if (!_isProgrammaticMove.value) {
+                            _isTrackingLocation.value = false;
+                          } else {
+                            _isProgrammaticMove.value = false;
+                          }
+                        },
                       ),
                       CustomInfoWindow(
                         controller: _customInfoWindowControllerSignal.value,

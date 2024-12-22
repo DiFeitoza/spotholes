@@ -38,21 +38,22 @@ class RouteController {
   late final dataBaseSpotholesRef = databaseReference.child('spotholes');
   final _spotholesInRouteList = Signal<List<Spothole>>([]);
 
-  GoogleMapController? _googleMapController;
-  get googleMapController => _googleMapController;
-  set googleMapController(mapController) =>
-      _googleMapController = mapController;
-
-  final _googleMapControllerCompleter = Completer();
-  get googleMapControllerCompleter => _googleMapControllerCompleter;
+  final _googleMapControllerCompleter = Completer<GoogleMapController>();
+  get getGoogleMapController async =>
+      await _googleMapControllerCompleter.future;
 
   final _customInfoWindowControllerSignal =
       Signal<CustomInfoWindowController>(CustomInfoWindowController());
   get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
 
-  SpotholeService? _spotholeService;
-
+  // Store all markers
   final _markersSignal = Signal<Map<String, Marker>>({});
+
+  late final _spotholeService = SpotholeService(
+    _markersSignal,
+    _customInfoWindowControllerSignal,
+  );
+
   // Store all polyline points
   final _routePolylineCoordinatesSignal = Signal<List<LatLng>>([]);
   // Store all polylines
@@ -83,10 +84,8 @@ class RouteController {
   get pageControllerSignal => _pageControllerSignal;
 
   void onMapCreated(mapController) {
-    _googleMapControllerCompleter.complete(mapController);
     _customInfoWindowControllerSignal.value.googleMapController = mapController;
-    _spotholeService =
-        SpotholeService(_markersSignal, _customInfoWindowControllerSignal);
+    _googleMapControllerCompleter.complete(mapController);
   }
 
   GeoCoord latLngToGeoCoord(LatLng latLng) =>
@@ -101,8 +100,9 @@ class RouteController {
   String geoCoordToString(GeoCoord geoCoord) =>
       '${geoCoord.latitude},${geoCoord.longitude}';
 
-  void updateCameraGeoCoord(GeoCoord target, [zoom = defaultZoomMap]) {
-    _googleMapController!.animateCamera(
+  void updateCameraGeoCoord(GeoCoord target, [zoom = defaultZoomMap]) async {
+    final mapController = await getGoogleMapController;
+    mapController.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           zoom: zoom,
@@ -112,8 +112,9 @@ class RouteController {
     );
   }
 
-  void updateCameraLatLng(LatLng target, [zoom = defaultZoomMap]) {
-    _googleMapController!.animateCamera(
+  void updateCameraLatLng(LatLng target, [zoom = defaultZoomMap]) async {
+    final mapController = await getGoogleMapController;
+    mapController.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           zoom: zoom,
@@ -133,8 +134,9 @@ class RouteController {
     newCameraLatLngBounds([startLocationLatLng, endLocationLatLng]);
   }
 
-  void newCameraLatLngBounds(List<LatLng> polylineCoordinates) {
-    _googleMapController!.animateCamera(
+  void newCameraLatLngBounds(List<LatLng> polylineCoordinates) async {
+    final mapController = await getGoogleMapController;
+    mapController.animateCamera(
       CameraUpdate.newLatLngBounds(
         MapUtils.boundsFromLatLngList(polylineCoordinates),
         70,
@@ -165,7 +167,7 @@ class RouteController {
   }
 
   Future<void> loadRouteWithLegsAndSteps(
-      LatLng sourceLocation, LatLng destinationLocation, context) async {
+      LatLng sourceLocation, LatLng destinationLocation) async {
     DirectionsService.init(EnvironmentConfig.googleApiKey!);
     final directionsService = DirectionsService();
 
@@ -179,7 +181,7 @@ class RouteController {
 
     await directionsService.route(
       request,
-      (DirectionsResult response, DirectionsStatus? status) async {
+      (DirectionsResult response, DirectionsStatus? status) {
         if (status == DirectionsStatus.ok) {
           _directionResult.value = response;
           _routeStepsLatLng.value = response.routes!.first.legs!.first.steps!;
@@ -197,9 +199,9 @@ class RouteController {
           );
           loadRouteMarkers(_routePolylineCoordinatesSignal.value.first,
               _routePolylineCoordinatesSignal.value.last);
-          _googleMapController = await _googleMapControllerCompleter.future;
           centerViewRoute();
-          loadSpotholesInRoute(context);
+          _spotholeService.loadSpotholesInRoute(
+              routePolylineCoordinatesSignal.value, _spotholesInRouteList);
         } else {
           // do something with error response
         }
@@ -239,9 +241,13 @@ class RouteController {
     };
   }
 
-  void loadSpotholesInRoute(context) {
-    _spotholesInRouteList.value = _spotholeService!
-        .loadSpotholesInRoute(context, routePolylineCoordinatesSignal.value);
+  // Update context and controllers related to the markers
+  void updateAllRouteMarkers() {
+    final sourceLocation = markersSignal.value['sourceRouteMarker']!.position;
+    final destinationLocation =
+        markersSignal.value['destinationRouteMarker']!.position;
+    loadRouteMarkers(sourceLocation, destinationLocation);
+    _spotholeService.addSpotholeMarkers(spotholesInRouteList);
   }
 
   void setupStepsPageView(int initialPage, String type) {
@@ -314,6 +320,20 @@ class RouteController {
   void clearManeuverPolyline() {
     polylinesSignal.value.remove('maneuverArrow');
     polylinesSignal.value.remove('straightPath');
+    polylinesSignal.value = {...polylinesSignal.value};
+  }
+
+  void updateRoutePolyline() {
+    // Modifica a polyline da rota
+    polylinesSignal.value['route'] = Polyline(
+      polylineId: const PolylineId("route"),
+      points: _routePolylineCoordinatesSignal.value,
+      width: 6,
+      color: primaryColor,
+      geodesic: true,
+      jointType: JointType.round,
+    );
+    // Força o update das polylines da rota
     polylinesSignal.value = {...polylinesSignal.value};
   }
 

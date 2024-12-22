@@ -43,6 +43,13 @@ class _NavigationPageState extends State<NavigationPage> {
   late final _customInfoWindowControllerSignal =
       _routeController.customInfoWindowControllerSignal;
 
+  late final _isTrackingLocation = _navigationController.isTrackingLocation;
+  late final _isProgrammaticMove = _navigationController.isProgrammaticMove;
+
+  void trackLocation() {
+    _navigationController.trackLocation();
+  }
+
   @override
   void dispose() {
     NavigationController.dispose();
@@ -118,6 +125,13 @@ class _NavigationPageState extends State<NavigationPage> {
                                   onCameraMove: (position) =>
                                       _customInfoWindowControllerSignal
                                           .value.onCameraMove!(),
+                                  onCameraMoveStarted: () {
+                                    if (!_isProgrammaticMove.value) {
+                                      _isTrackingLocation.value = false;
+                                    } else {
+                                      _isProgrammaticMove.value = false;
+                                    }
+                                  },
                                 ),
                               ),
                             );
@@ -140,7 +154,7 @@ class _NavigationPageState extends State<NavigationPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: <Widget>[
                                 CustomFloatingActionButton(
-                                  tooltip: "Start Mock Locaiton",
+                                  tooltip: "Start Mock Location",
                                   onPressed: () => {},
                                   // _navigationController.startMockLocation(),
                                   icon: const Icon(Icons.play_arrow),
@@ -155,9 +169,10 @@ class _NavigationPageState extends State<NavigationPage> {
                                 const SizedBox(height: 10),
                                 CustomFloatingActionButton(
                                   tooltip: "Centralizar a câmera",
-                                  onPressed: () => _navigationController
-                                      .centerCurrentLocation(),
-                                  icon: const Icon(Icons.location_searching),
+                                  onPressed: () => trackLocation(),
+                                  icon: _isTrackingLocation.value
+                                      ? const Icon(Icons.my_location)
+                                      : const Icon(Icons.location_searching),
                                 ),
                               ],
                             ),

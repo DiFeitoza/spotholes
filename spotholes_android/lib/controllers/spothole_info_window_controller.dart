@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals.dart';
 import 'package:spotholes_android/package/custom_info_window.dart';
 
+import '../main.dart';
 import '../models/spothole.dart';
 import '../services/service_locator.dart';
 import '../utilities/constants.dart';
@@ -35,7 +36,8 @@ class SpotholeInfoWindowController {
     );
   }
 
-  void addSpotholeMarker(context, Spothole spothole) {
+  void addSpotholeMarker(Spothole spothole) {
+    final context = MyApp.navigatorKey.currentContext;
     final marker = Marker(
       markerId: MarkerId(spothole.id!),
       icon: spothole.type == Type.deepHole
@@ -68,7 +70,7 @@ class SpotholeInfoWindowController {
     spothole.category = riskCategory;
     spothole.type = type;
     spothole.id = spotholeId;
-    addSpotholeMarker(context, spothole);
+    addSpotholeMarker(spothole);
     _markersSignal.value = {..._markersSignal.value};
     _markersSignal.value[spotholeId]!.onTap!();
     updateCameraGoogleMapsController(spothole.position);

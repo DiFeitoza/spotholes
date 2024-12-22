@@ -5,6 +5,7 @@ import 'package:signals/signals_flutter.dart';
 import 'package:spotholes_android/controllers/spothole_info_window_controller.dart';
 import 'package:spotholes_android/services/service_locator.dart';
 
+import '../main.dart';
 import '../models/spothole.dart';
 import '../package/custom_info_window.dart';
 import '../utilities/point_on_route_haversine.dart';
@@ -22,7 +23,7 @@ class SpotholeService {
 
   SpotholeService(this._markersSignal, this._customInfoWindowControllerSignal);
 
-  void loadSpotholeMarkers(context) {
+  void loadSpotholeMarkers() {
     databaseReference.child('spotholes').once().then(
       (DatabaseEvent event) {
         final spotholesMap = event.snapshot.value as Map?;
@@ -33,7 +34,6 @@ class SpotholeService {
                   Spothole.fromJson(Map<String, dynamic>.from(value as Map));
               spothole.id = key;
               _spotholeInfoWindowController.addSpotholeMarker(
-                context,
                 spothole,
               );
             },
@@ -44,8 +44,7 @@ class SpotholeService {
     );
   }
 
-  List<Spothole> loadSpotholesInRoute(context, routePolylineCoordinates) {
-    List<Spothole> spotholesInRouteList = [];
+  void loadSpotholesInRoute(routePolylineCoordinates, spotholesInRouteList) {
     databaseReference.child('spotholes').once().then(
       (DatabaseEvent event) {
         final spotholesMap = event.snapshot.value as Map?;
@@ -57,21 +56,24 @@ class SpotholeService {
             spothole.id = entry.key;
             return spothole;
           }).toList();
-          spotholesInRouteList = checkPointsAndStoreAccumulatedDistances(
+          spotholesInRouteList.value = checkPointsAndStoreAccumulatedDistances(
             spotholeList,
             routePolylineCoordinates,
           );
-          for (Spothole spothole in spotholesInRouteList) {
-            _spotholeInfoWindowController.addSpotholeMarker(context, spothole);
-          }
-          _markersSignal.value = {..._markersSignal.value};
+          addSpotholeMarkers(spotholesInRouteList);
         }
       },
     );
-    return spotholesInRouteList;
   }
 
-  void registerSpothole(context, LatLng position, category, type) {
+  void addSpotholeMarkers(spotholesInRouteList) {
+    for (Spothole spothole in spotholesInRouteList.value) {
+      _spotholeInfoWindowController.addSpotholeMarker(spothole);
+    }
+    _markersSignal.value = {..._markersSignal.value};
+  }
+
+  void registerSpothole(LatLng position, category, type) {
     final newSpotHoleRef = dataBaseSpotholesRef.push();
     final newSpothole = Spothole(
       DateTime.now().toUtc(),
@@ -83,19 +85,20 @@ class SpotholeService {
       newSpotHoleRef.key,
     );
     newSpotHoleRef.set(newSpothole.toJson());
-    _spotholeInfoWindowController.addSpotholeMarker(context, newSpothole);
+    _spotholeInfoWindowController.addSpotholeMarker(newSpothole);
     _markersSignal.value = {..._markersSignal.value};
   }
 
-  void registerSpotholeModal(context, position) {
+  void registerSpotholeModal(position) {
+    final context = MyApp.navigatorKey.currentContext;
     showModalBottomSheet(
-      context: context,
+      context: context!,
       builder: (builder) {
         return RegisterSpotholeModal(
           title: "Para alertar um risco, selecione:",
           textOnRegisterButton: "Adicionar",
           onRegister: (riskCategory, type) =>
-              registerSpothole(context, position, riskCategory, type),
+              registerSpothole(position, riskCategory, type),
         );
       },
     );

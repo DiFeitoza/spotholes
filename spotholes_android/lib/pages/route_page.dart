@@ -72,7 +72,7 @@ class _RoutePageState extends State<RoutePage> {
 
   Future<void> _loadRoute() async {
     await _routeController.loadRouteWithLegsAndSteps(
-        widget.sourceLocation, widget.destinationLocation, context);
+        widget.sourceLocation, widget.destinationLocation);
     setState(() {
       _isLoading = false;
     });

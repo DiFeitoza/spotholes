@@ -50,8 +50,8 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
       ),
       CustomButton(
         label: 'Alertar',
-        onPressed: () => _baseMapController.registerSpotholeModal(context,
-            position: position),
+        onPressed: () =>
+            _baseMapController.registerSpotholeModal(position: position),
       ),
     ];
   }

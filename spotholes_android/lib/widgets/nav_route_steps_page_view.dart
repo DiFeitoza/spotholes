@@ -23,10 +23,10 @@ class NavRouteStepsPageView extends StatefulWidget {
   });
 
   @override
-  RouteStepsStatePageView createState() => RouteStepsStatePageView();
+  NavRouteStepsStatePageView createState() => NavRouteStepsStatePageView();
 }
 
-class RouteStepsStatePageView extends State<NavRouteStepsPageView> {
+class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
   late final _routeController = widget.routeController;
   late final _pageController = widget.pageController;
   int _currentPage = 0;
@@ -41,6 +41,7 @@ class RouteStepsStatePageView extends State<NavRouteStepsPageView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _animateOnce();
     });
+
     _pageController.addListener(
       () {
         int newPage = _pageController.page!.round();

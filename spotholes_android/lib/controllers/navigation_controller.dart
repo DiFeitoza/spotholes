@@ -16,7 +16,6 @@ class NavigationController {
   late final Signal<LocationData?> _currentLocationSignal =
       _locationService.currentLocationSignal;
 
-  GoogleMapController? _mapController;
   static Function? _dispose;
 
   final _pageController = PageController(initialPage: 1);
@@ -25,6 +24,18 @@ class NavigationController {
   late final _navigationService =
       NavigationService(_routeController, _pageController);
   get navigationService => _navigationService;
+
+  final isTrackingLocation = signal(true);
+  final isProgrammaticMove = signal(true);
+
+  void trackLocation() {
+    if (isTrackingLocation.value) {
+      isTrackingLocation.value = false;
+    } else {
+      isTrackingLocation.value = true;
+      centerCurrentLocation();
+    }
+  }
 
   /*Tentativa de Mock do serviço de localização
   final _locationService = LocationServiceMock.create();
@@ -38,11 +49,10 @@ class NavigationController {
   } */
 
   void onMapCreated(mapController) {
-    _mapController = mapController;
-    _routeController.googleMapController = _mapController;
-    _routeController.onMapCreated(_mapController);
+    mapController.setMapStyle(mapStyle2D);
+    _routeController.onMapCreated(mapController);
     listenCurrentLocation();
-    // _navigationService.startNavigation();
+    _routeController.updateAllRouteMarkers();
   }
 
   void listenCurrentLocation() async {
@@ -60,25 +70,30 @@ class NavigationController {
               _navigationService.updateRouteStatus(currentLocation);
             },
           );
-          _updateNavigationCamera(currentLocation, heading);
+          if (isTrackingLocation.value) {
+            _updateNavigationCamera(currentLocation, heading);
+          }
         }
       },
     );
   }
 
-  void _updateNavigationCamera(LatLng position, double heading) {
+  void _updateNavigationCamera(LatLng position, double heading) async {
     final CameraPosition newCameraPosition = CameraPosition(
       target: position,
       zoom: defaultZoomMap,
       bearing: heading,
       tilt: defaultNavigationTilt,
     );
-    _mapController!.animateCamera(
+    final mapController = await _routeController.getGoogleMapController;
+    isProgrammaticMove.value = true;
+    mapController.animateCamera(
       CameraUpdate.newCameraPosition(newCameraPosition),
     );
   }
 
   void centerCurrentLocation() {
+    isProgrammaticMove.value = true;
     _routeController.updateCameraLatLng(_locationService.currentLocationLatLng);
   }
 

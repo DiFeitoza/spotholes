@@ -30,48 +30,67 @@ class BaseMapController {
   Function? _dispose;
 
   final LocationService _locationService = LocationService.instance;
+
   late final Signal<LocationData?> _currentLocationSignal =
       _locationService.currentLocationSignal;
+  get currentLocationSignal => _currentLocationSignal;
+  get currentLocationLatLng => LatLng(_currentLocationSignal.value!.latitude!,
+      _currentLocationSignal.value!.longitude!);
 
   final databaseReference = getIt<DatabaseReference>();
   late final dataBaseSpotholesRef = databaseReference.child('spotholes');
 
-  GoogleMapController? _googleMapController;
-  final _googleMapControllerCompleter = Completer();
+  final _googleMapControllerCompleter = Completer<GoogleMapController>();
+  get getGoogleMapController async =>
+      await _googleMapControllerCompleter.future;
+
   final _customInfoWindowControllerSignal =
       Signal<CustomInfoWindowController>(CustomInfoWindowController());
-  SpotholeService? spotholeService;
+  get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
+
+  final _markersSignal = Signal<Map<String, Marker>>({});
+  get markersSignal => _markersSignal;
+
+  late final spotholeService = SpotholeService(
+    _markersSignal,
+    _customInfoWindowControllerSignal,
+  );
+
   final _textEditingController = TextEditingController();
+  get textEditingController => _textEditingController;
+
   final _searchBarFocusNode = FocusNode();
+  get searchBarFocusNode => _searchBarFocusNode;
 
   late Signal draggableScrollableSheetSignal = signal(
     DraggableScrollableSheetTypes.initial.widget,
   );
 
   final _geocodingService = GeocodingService.instance;
+  final isTrackingLocation = signal(true);
+  final isProgrammaticMove = signal(true);
 
-  final _markersSignal = Signal<Map<String, Marker>>({});
-
-  get markersSignal => _markersSignal;
-  get currentLocationSignal => _currentLocationSignal;
-  get textEditingController => _textEditingController;
-  get searchBarFocusNode => _searchBarFocusNode;
-  get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
-  get currentLocationLatLng => LatLng(_currentLocationSignal.value!.latitude!,
-      _currentLocationSignal.value!.longitude!);
-
-  void onMapCreated(mapController, context) {
-    _googleMapControllerCompleter.complete(mapController);
+  void onMapCreated(mapController) {
     _customInfoWindowControllerSignal.value.googleMapController = mapController;
-    spotholeService = SpotholeService(
-      _markersSignal,
-      _customInfoWindowControllerSignal,
-    );
-    spotholeService!.loadSpotholeMarkers(context);
+    _googleMapControllerCompleter.complete(mapController);
+    listenCurrentLocation();
+    spotholeService.loadSpotholeMarkers();
   }
 
-  void updateCameraGoogleMapsController(position, [zoom = defaultZoomMap]) {
-    _googleMapController!.animateCamera(
+  void trackLocation() {
+    if (isTrackingLocation.value) {
+      isTrackingLocation.value = false;
+    } else {
+      isTrackingLocation.value = true;
+      centerView();
+    }
+  }
+
+  void updateCameraGoogleMapsController(position,
+      [zoom = defaultZoomMap]) async {
+    final mapController = await getGoogleMapController;
+    isProgrammaticMove.value = true;
+    mapController.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           zoom: zoom,
@@ -85,12 +104,6 @@ class BaseMapController {
     updateCameraGoogleMapsController(currentLocationLatLng);
   }
 
-  void loadCurrentLocation() async {
-    _googleMapController = await _googleMapControllerCompleter.future;
-    centerView();
-    listenCurrentLocation();
-  }
-
   void listenCurrentLocation() async {
     _dispose = effect(
       () {
@@ -101,6 +114,9 @@ class BaseMapController {
               _customInfoWindowControllerSignal,
             ),
           );
+        }
+        if (isTrackingLocation.value) {
+          centerView();
         }
       },
     );
@@ -114,6 +130,7 @@ class BaseMapController {
     _customInfoWindowControllerSignal.value.hideInfoWindow!();
     removeMarkerByKey(key);
     changeDraggableSheet(DraggableScrollableSheetTypes.initial);
+    isTrackingLocation.value = true;
     centerView();
   }
 
@@ -140,13 +157,13 @@ class BaseMapController {
     markersSignal.value.remove(key);
   }
 
-  void loadSpotholeMarkers(context) {
-    spotholeService!.loadSpotholeMarkers(context);
+  void loadSpotholeMarkers() {
+    spotholeService.loadSpotholeMarkers();
   }
 
-  void registerSpotholeModal(context, {LatLng? position}) {
+  void registerSpotholeModal({LatLng? position}) {
     final latLng = position ?? currentLocationLatLng;
-    spotholeService!.registerSpotholeModal(context, latLng);
+    spotholeService.registerSpotholeModal(latLng);
   }
 
   void onLongPress(BuildContext context, LatLng position) async {
@@ -183,8 +200,7 @@ class BaseMapController {
       DraggableScrollableSheetTypes.location(
         position: position,
         formattedPlacemark: formattedPlacemark,
-        onRegister: () =>
-            spotholeService!.registerSpotholeModal(context, position),
+        onRegister: () => spotholeService.registerSpotholeModal(position),
       ),
     );
   }
