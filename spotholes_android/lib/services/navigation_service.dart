@@ -139,19 +139,11 @@ class NavigationService {
       // TODO Incluir possibilidade de recálculo manual, porém com limite de tempo para evitar uso indevido
       if (_countOutOfRoute > 5 && _countRecalculatedRoute <= 3) {
         _countOutOfRoute = 0;
-        recalculateRoute(currentLocation);
+        _routeController.recalculateRoute(currentLocation);
         _countRecalculatedRoute += 1;
       }
     }
     debugPrint(
         '----[Após descarte] points ${_routePolylineCoordinatesSignal.value.length} steps:${_routeController.routeStepsLatLng.value.length}');
-  }
-
-  void recalculateRoute(LatLng currentPosition) {
-    // Função mock, substitua com a lógica real para recalcular a rota usando a API de Directions do Google Maps
-    // vou precisar do contexto atualizado para fazer isso!
-    LatLng destination = _routePolylineCoordinatesSignal.value.last;
-    _routeController.clearManeuverPolyline();
-    _routeController.loadRouteWithLegsAndSteps(currentPosition, destination);
   }
 }

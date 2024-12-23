@@ -166,6 +166,12 @@ class RouteController {
     return RoutePointsData(routePoints, stepsIndexes);
   }
 
+  void recalculateRoute(LatLng currentLocation) {
+    LatLng destination = _routePolylineCoordinatesSignal.value.last;
+    clearManeuverPolyline();
+    loadRouteWithLegsAndSteps(currentLocation, destination);
+  }
+
   Future<void> loadRouteWithLegsAndSteps(
       LatLng sourceLocation, LatLng destinationLocation) async {
     DirectionsService.init(EnvironmentConfig.googleApiKey!);
@@ -335,6 +341,10 @@ class RouteController {
     );
     // Força o update das polylines da rota
     polylinesSignal.value = {...polylinesSignal.value};
+  }
+
+  void registerSpotholeModal(LatLng registerPosition) {
+    _spotholeService.registerSpotholeModal(registerPosition);
   }
 
   RouteController isolatedCopy() {

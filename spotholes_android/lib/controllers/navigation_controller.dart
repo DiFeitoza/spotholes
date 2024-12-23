@@ -37,17 +37,6 @@ class NavigationController {
     }
   }
 
-  /*Tentativa de Mock do serviço de localização
-  final _locationService = LocationServiceMock.create();
-  late final Signal<LocationData?> _currentLocationSignal =
-      _locationService.currentLocationSignal;
-  void startMockLocation(){
-    _locationService.startMockLocationMonitoring();
-  }
-  void stopMockLocation(){
-    _locationService.stopMockLocationMonitoring();
-  } */
-
   void onMapCreated(mapController) {
     mapController.setMapStyle(mapStyle2D);
     _routeController.onMapCreated(mapController);
@@ -95,6 +84,16 @@ class NavigationController {
   void centerCurrentLocation() {
     isProgrammaticMove.value = true;
     _routeController.updateCameraLatLng(_locationService.currentLocationLatLng);
+  }
+
+  void registerSpotholeModal({LatLng? position}) {
+    LatLng registerPosition =
+        position ?? _locationService.currentLocationLatLng;
+    _routeController.registerSpotholeModal(registerPosition);
+  }
+
+  void recalculateRoute() {
+    _routeController.recalculateRoute(_locationService.currentLocationLatLng);
   }
 
   static dispose() {

@@ -7,6 +7,7 @@ import '../controllers/navigation_controller.dart';
 import '../controllers/route_controller.dart';
 import '../package/custom_info_window.dart';
 import '../utilities/constants.dart';
+import '../utilities/custom_icons.dart';
 import '../widgets/button/custom_floating_action_button.dart';
 import '../widgets/draggable_scrollable_sheet/navigation_draggable_sheet.dart';
 import '../widgets/nav_route_steps_page_view.dart';
@@ -154,21 +155,22 @@ class _NavigationPageState extends State<NavigationPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: <Widget>[
                                 CustomFloatingActionButton(
-                                  tooltip: "Start Mock Location",
-                                  onPressed: () => {},
-                                  // _navigationController.startMockLocation(),
-                                  icon: const Icon(Icons.play_arrow),
+                                    tooltip: "Adicionar um risco",
+                                    onPressed: () => _navigationController
+                                        .registerSpotholeModal(),
+                                    icon: CustomIcons.potholeAddIcon),
+                                const SizedBox(height: 10),
+                                CustomFloatingActionButton(
+                                  tooltip: "Atualizar rota e marcadores",
+                                  onPressed: () =>
+                                      _navigationController.recalculateRoute(),
+                                  icon: const Icon(Icons.autorenew),
                                 ),
                                 const SizedBox(height: 10),
                                 CustomFloatingActionButton(
-                                  tooltip: "Stop Mock Location",
-                                  onPressed: () => {},
-                                  // _navigationController.stopMockLocation(),
-                                  icon: const Icon(Icons.pause),
-                                ),
-                                const SizedBox(height: 10),
-                                CustomFloatingActionButton(
-                                  tooltip: "Centralizar a câmera",
+                                  tooltip: _isTrackingLocation.value
+                                      ? "Desativar centralização de câmera"
+                                      : "Ativar centralização de câmera",
                                   onPressed: () => trackLocation(),
                                   icon: _isTrackingLocation.value
                                       ? const Icon(Icons.my_location)

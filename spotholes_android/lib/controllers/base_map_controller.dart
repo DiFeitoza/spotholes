@@ -162,8 +162,8 @@ class BaseMapController {
   }
 
   void registerSpotholeModal({LatLng? position}) {
-    final latLng = position ?? currentLocationLatLng;
-    spotholeService.registerSpotholeModal(latLng);
+    final registerPosition = position ?? currentLocationLatLng;
+    spotholeService.registerSpotholeModal(registerPosition);
   }
 
   void onLongPress(BuildContext context, LatLng position) async {

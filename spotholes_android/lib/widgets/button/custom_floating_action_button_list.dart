@@ -37,7 +37,9 @@ class CustomFloatingActionButtonList extends StatelessWidget {
             const SizedBox(height: 10),
             Watch(
               (_) => CustomFloatingActionButton(
-                tooltip: "Centralizar a câmera",
+                tooltip: _isTrackingLocation.value
+                    ? "Desativar centralização de câmera"
+                    : "Ativar centralização de câmera",
                 onPressed: () => trackingLocation(),
                 icon: _isTrackingLocation.value
                     ? const Icon(Icons.my_location)
