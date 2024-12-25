@@ -62,6 +62,7 @@ class RouteController {
   final _directionResult = Signal<DirectionsResult>(const DirectionsResult());
   final Signal<List<Step>> _routeStepsLatLng = Signal<List<Step>>([]);
   Signal<List<Step>> get routeStepsLatLng => _routeStepsLatLng;
+  final Signal<List<Step>> _auxRouteStepsLatLng = Signal<List<Step>>([]);
 
   // Store steps' start indexes inside a route polyline
   List<int> _stepsIndexes = [];
@@ -128,9 +129,9 @@ class RouteController {
     newCameraLatLngBounds(_routePolylineCoordinatesSignal.value);
   }
 
-  void newCameraLatLngBoundsFromStep(Step step) {
-    final startLocationLatLng = geoCoordToLatLng(step.startLocation!);
-    final endLocationLatLng = geoCoordToLatLng(step.endLocation!);
+  void newCameraLatLngBoundsFromStep(Step currentStep) {
+    final startLocationLatLng = geoCoordToLatLng(currentStep.startLocation!);
+    final endLocationLatLng = geoCoordToLatLng(currentStep.endLocation!);
     newCameraLatLngBounds([startLocationLatLng, endLocationLatLng]);
   }
 
@@ -156,8 +157,8 @@ class RouteController {
     List<LatLng> stepPoints = [];
     List<int> stepsIndexes = [];
     int currentIndex = 0;
-    for (var step in steps) {
-      var polyline = step.polyline!.points;
+    for (var currentStep in steps) {
+      var polyline = currentStep.polyline!.points;
       stepPoints = decodePolyline(polyline!);
       routePoints.addAll(stepPoints);
       stepsIndexes.add(currentIndex);
@@ -168,6 +169,7 @@ class RouteController {
 
   void recalculateRoute(LatLng currentLocation) {
     LatLng destination = _routePolylineCoordinatesSignal.value.last;
+    _markersSignal.value.clear();
     clearManeuverPolyline();
     loadRouteWithLegsAndSteps(currentLocation, destination);
   }
@@ -191,6 +193,7 @@ class RouteController {
         if (status == DirectionsStatus.ok) {
           _directionResult.value = response;
           _routeStepsLatLng.value = response.routes!.first.legs!.first.steps!;
+          _auxRouteStepsLatLng.value = [..._routeStepsLatLng.value];
           final routePointsData =
               decodePointsFromSteps(_routeStepsLatLng.value);
           _routePolylineCoordinatesSignal.value = routePointsData.points;
@@ -264,18 +267,18 @@ class RouteController {
 
   void plotManeuverPolyline(int stepIndex, {bool updateCamera = true}) {
     final steps = _routeStepsLatLng.value;
-    final step = steps[stepIndex];
-    final maneuver = step.maneuver ?? 'straight';
+    final currentStep = steps[stepIndex];
+    final maneuver = currentStep.maneuver ?? 'straight';
     List<LatLng> maneuverPoints = [];
     List<LatLng> arrowPoints = [];
     int? midpointIndex;
 
     final sourceLocation = markersSignal.value['sourceRouteMarker']!.position;
 
-    maneuverPoints = decodePolyline(step.polyline!.points!);
+    maneuverPoints = decodePolyline(currentStep.polyline!.points!);
 
     if (maneuver == 'straight') {
-      if (updateCamera) newCameraLatLngBoundsFromStep(step);
+      if (updateCamera) newCameraLatLngBoundsFromStep(currentStep);
       polylinesSignal.value.addAll({
         'straightPath': Polyline(
           polylineId: const PolylineId('straightPath'),
@@ -288,13 +291,16 @@ class RouteController {
         )
       });
     } else {
-      if (updateCamera) updateCameraGeoCoord(step.startLocation!);
-      if (stepIndex == 0) {
+      if (updateCamera) updateCameraGeoCoord(currentStep.startLocation!);
+      final previousStepIndex =
+          _auxRouteStepsLatLng.value.indexOf(currentStep) - 1;
+      if (previousStepIndex == 0) {
         maneuverPoints = [sourceLocation, ...maneuverPoints];
         midpointIndex = 1;
       } else {
+        final previousStep = _auxRouteStepsLatLng.value[previousStepIndex];
         final beforeManeuverPoints =
-            decodePolyline(steps[stepIndex - 1].polyline!.points!);
+            decodePolyline(previousStep.polyline!.points!);
         midpointIndex = beforeManeuverPoints.length;
         maneuverPoints.insertAll(0, beforeManeuverPoints);
       }
@@ -373,6 +379,7 @@ class RouteController {
     copy._directionResult.value = _directionResult.value;
     copy._stepsIndexes = _stepsIndexes;
     copy._routeStepsLatLng.value = _routeStepsLatLng.value;
+    copy._auxRouteStepsLatLng.value = _auxRouteStepsLatLng.value;
     // Removi todos os casos de valores que são inicializados nulo no RouteController, assim eles são reinicializados e não retorna erro por duplicidade, como no caso de widgets que precisam de controladores únicos
     // copy._pageControllerSignal.value = PageController(initialPage: 1);
     // copy._routeAndStepsListSignal.value =
@@ -423,15 +430,15 @@ class RouteController {
   //   strSteps.add(strRoute);
   //   //STEPS
   //   List<Step> steps = response.routes![0].legs![0].steps!;
-  //   for (Step step in steps) {
-  //     strSteps.add('Distância: ${step.distance}\n'
-  //         'Duração: ${step.duration!.text}\n'
-  //         'Start Location: ${geoCoordToString(step.startLocation!)}\n'
-  //         'End Location: ${geoCoordToString(step.endLocation!)}\n'
-  //         'Instructions: ${step.instructions}\n'
-  //         'Maneuver: ${step.maneuver}\n'
-  //         'Transit: ${step.transit}\n'
-  //         'Travel Mode: ${step.travelMode}\n');
+  //   for (Step currentStep in steps) {
+  //     strSteps.add('Distância: ${currentStep.distance}\n'
+  //         'Duração: ${currentStep.duration!.text}\n'
+  //         'Start Location: ${geoCoordToString(currentStep.startLocation!)}\n'
+  //         'End Location: ${geoCoordToString(currentStep.endLocation!)}\n'
+  //         'Instructions: ${currentStep.instructions}\n'
+  //         'Maneuver: ${currentStep.maneuver}\n'
+  //         'Transit: ${currentStep.transit}\n'
+  //         'Travel Mode: ${currentStep.travelMode}\n');
   //   }
   //   //Update da string de ROTA e STEPS
   //   _routeAndStepsListSignal.value = strSteps;

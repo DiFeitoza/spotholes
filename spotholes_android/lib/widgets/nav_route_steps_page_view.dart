@@ -14,12 +14,14 @@ class NavRouteStepsPageView extends StatefulWidget {
   final RouteController routeController;
   final PageController pageController;
   final Signal<DirectionsRoute> route;
+  final Signal<bool> isPageViewUpdateCamera;
 
   const NavRouteStepsPageView({
     super.key,
     required this.routeController,
     required this.pageController,
     required this.route,
+    required this.isPageViewUpdateCamera,
   });
 
   @override
@@ -29,6 +31,8 @@ class NavRouteStepsPageView extends StatefulWidget {
 class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
   late final _routeController = widget.routeController;
   late final _pageController = widget.pageController;
+  late final _isPageViewUpdateCamera = widget.isPageViewUpdateCamera;
+
   int _currentPage = 0;
 
   late final _route = widget.route;
@@ -54,7 +58,15 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
             _routeController.updateCameraGeoCoord(_leg.value.endLocation!);
           } else {
             final stepIndex = _currentPage - 1;
-            _routeController.plotManeuverPolyline(stepIndex);
+            if (_isPageViewUpdateCamera.value) {
+              _routeController.plotManeuverPolyline(stepIndex,
+                  updateCamera: true);
+            } else {
+              // Caso seja uma execução que não precise atualizar a câmera, volta para o estado padrão
+              _isPageViewUpdateCamera.value = true;
+              _routeController.plotManeuverPolyline(stepIndex,
+                  updateCamera: false);
+            }
           }
         }
       },
@@ -119,7 +131,8 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
                         child: CustomIcons.sourceIconAsset,
                       ),
                       onTap: () => {
-                        // _routeController.updateCameraGeoCoord(_leg.startLocation!),
+                        _routeController
+                            .updateCameraGeoCoord(_leg.value.startLocation!),
                       },
                     ),
                   ),
@@ -136,7 +149,8 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: ListTile(
                         onTap: () => {
-                          // _routeController.updateCameraGeoCoord(_leg.endLocation!),
+                          _routeController
+                              .updateCameraGeoCoord(_leg.value.endLocation!),
                         },
                         title: Text(
                           'Destino: ${_leg.value.endAddress!}',
@@ -164,10 +178,11 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     child: ListTile(
                       onTap: () => {
-                        // maneuver == 'straight'
-                        //     ? _routeController.newCameraLatLngBoundsFromStep(step)
-                        //     : _routeController
-                        //         .updateCameraGeoCoord(step.startLocation!),
+                        maneuver == 'straight'
+                            ? _routeController
+                                .newCameraLatLngBoundsFromStep(step)
+                            : _routeController
+                                .updateCameraGeoCoord(step.startLocation!),
                       },
                       leading: Icon(
                         icon,

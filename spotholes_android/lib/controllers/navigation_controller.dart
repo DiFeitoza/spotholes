@@ -21,18 +21,28 @@ class NavigationController {
   final _pageController = PageController(initialPage: 1);
   get pageController => _pageController;
 
-  late final _navigationService =
-      NavigationService(_routeController, _pageController);
-  get navigationService => _navigationService;
-
   final isTrackingLocation = signal(true);
   final isProgrammaticMove = signal(true);
+  final isPageViewMoveCamera = signal(true);
 
-  void trackLocation() {
+  late final _navigationService = NavigationService(_routeController,
+      _pageController, isTrackingLocation, isPageViewMoveCamera);
+  get navigationService => _navigationService;
+
+  void goToCurrentStepPageView() {
+    if (_pageController.page != 1) {
+      isPageViewMoveCamera.value = false;
+      _pageController.jumpToPage(1);
+    }
+  }
+
+  void onTrackLocation() {
+    // Alterna a ação entre rastrear e não rastrear
     if (isTrackingLocation.value) {
       isTrackingLocation.value = false;
     } else {
       isTrackingLocation.value = true;
+      goToCurrentStepPageView();
       centerCurrentLocation();
     }
   }
@@ -92,8 +102,13 @@ class NavigationController {
     _routeController.registerSpotholeModal(registerPosition);
   }
 
+  // TODO Limitar o número de requisições por minuto para evitar uso indevido, talvez um debaunce
   void recalculateRoute() {
     _routeController.recalculateRoute(_locationService.currentLocationLatLng);
+    _locationService.loadCurrentLocationMark(
+      _routeController.markersSignal,
+      _routeController.customInfoWindowControllerSignal,
+    );
   }
 
   static dispose() {

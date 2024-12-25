@@ -11,8 +11,15 @@ import '../utilities/constants.dart';
 class NavigationService {
   final RouteController _routeController;
   final PageController _pageController;
+  final Signal<bool> _isTrackingLocation;
+  final Signal<bool> _isPageViewUpdateCamera;
 
-  NavigationService(this._routeController, this._pageController);
+  NavigationService(
+    this._routeController,
+    this._pageController,
+    this._isTrackingLocation,
+    this._isPageViewUpdateCamera,
+  );
 
   late final Signal<List<LatLng>> _routePolylineCoordinatesSignal =
       _routeController.routePolylineCoordinatesSignal;
@@ -68,7 +75,7 @@ class NavigationService {
     return -1;
   }
 
-  void updateRouteStatus(LatLng currentLocation) {
+  void updateRouteStatus(LatLng currentLocation) async {
     // TODO Verificar se há outras situações de fim da rota
     // Verifica se a rota está vazia, por exemplo: trajeto concluído.
     if (_routeController.routeStepsLatLng.value.isEmpty) {
@@ -97,21 +104,29 @@ class NavigationService {
       // Se o step avançou, o pageview é atualizado
       if (currentStepIndex > 0 && _pageController.hasClients) {
         // Atualiza a polyline que representa a seta de manobra no mapa. Precisa ser feito antes de remover os steps
-        _routeController.plotManeuverPolyline(currentStepIndex,
-            updateCamera: false);
-        // Remove steps que já passaram e faz update do signal
+        if (_isTrackingLocation.value || _pageController.page == 1) {
+          _routeController.plotManeuverPolyline(currentStepIndex,
+              updateCamera: false);
+        }
+        // Remove os steps que já passaram
         _stepsIndexes.removeRange(0, currentStepIndex);
         _routeController.routeStepsLatLng.value
             .removeRange(0, currentStepIndex);
-        _routeController.routeStepsLatLng.value = [
-          ..._routeController.routeStepsLatLng.value
-        ];
-        debugPrint('---pages: ${_pageController.page} $currentStepIndex');
-        // Verifica se está na pageView correspondente ao step atual, senão atualiza
-        if (_pageController.page != currentStepIndex) {
-          // TODO Criar uma segunda condição, talvez um boolean para chavear entre monitorar automaticamente ou com base na ação do usuário, incluindo movimento de câmera, pageview, etc.
-          _pageController.jumpToPage(currentStepIndex);
+
+        final stepsLength = _routeController.routeStepsLatLng.value.length;
+        final totalRemovedSteps = currentStepIndex;
+        final page = _pageController.page!.toInt();
+        // Verifica se o movimento de retorno do pageView termina no máximo na página 01 (step 0), se a página atual está entre a página 01 e a penúltima página (dentro da lista de steps)
+        if (totalRemovedSteps < page && page > 1 && page < stepsLength + 2) {
+          _isPageViewUpdateCamera.value = false;
+          _pageController.jumpToPage(page - totalRemovedSteps);
+        } else {
+          // É necessário atualizar para forçar a renderização do widget, porém assim evita duplicação do update porque o jumpToPage invoca um método que faz update da lista
+          _routeController.routeStepsLatLng.value = [
+            ..._routeController.routeStepsLatLng.value
+          ];
         }
+        debugPrint('---pages: ${_pageController.page} $currentStepIndex');
       }
       // Caso esteja entre a posição 0 e 1 da polyline (index == 0), então a polyline é atualizada
     } else if (index == 0) {
@@ -136,7 +151,6 @@ class NavigationService {
       // Recalcula a rota após 5 movimentos consecutivos fora da rota (considerando a margem de tolerâcia em metros)
       // Apenas recalcula a rota 3 vezes de forma automática, evitando falhas que gerem muitos recálculos
       // TODO Criar Snackbar para avisar que ultrapassou o limite de 3 vezes, perguntando se quer recalcular de forma manual, caso sim, mais 3 automáticos
-      // TODO Incluir possibilidade de recálculo manual, porém com limite de tempo para evitar uso indevido
       if (_countOutOfRoute > 5 && _countRecalculatedRoute <= 3) {
         _countOutOfRoute = 0;
         _routeController.recalculateRoute(currentLocation);

@@ -46,9 +46,11 @@ class _NavigationPageState extends State<NavigationPage> {
 
   late final _isTrackingLocation = _navigationController.isTrackingLocation;
   late final _isProgrammaticMove = _navigationController.isProgrammaticMove;
+  late final _isPageViewUpdateCamera =
+      _navigationController.isPageViewMoveCamera;
 
-  void trackLocation() {
-    _navigationController.trackLocation();
+  void onTrackLocation() {
+    _navigationController.onTrackLocation();
   }
 
   @override
@@ -90,6 +92,7 @@ class _NavigationPageState extends State<NavigationPage> {
                       routeController: _routeController,
                       pageController: _navigationController.pageController,
                       route: _routeSignal,
+                      isPageViewUpdateCamera: _isPageViewUpdateCamera,
                     ),
                   ),
                   Expanded(
@@ -171,7 +174,7 @@ class _NavigationPageState extends State<NavigationPage> {
                                   tooltip: _isTrackingLocation.value
                                       ? "Desativar centralização de câmera"
                                       : "Ativar centralização de câmera",
-                                  onPressed: () => trackLocation(),
+                                  onPressed: () => onTrackLocation(),
                                   icon: _isTrackingLocation.value
                                       ? const Icon(Icons.my_location)
                                       : const Icon(Icons.location_searching),
