@@ -4,6 +4,7 @@ import 'package:signals/signals_flutter.dart';
 import 'package:spotholes_android/widgets/spotholes_page_view.dart';
 
 import '../controllers/route_controller.dart';
+import '../main.dart';
 import '../package/custom_info_window.dart';
 import '../utilities/app_routes.dart';
 import '../utilities/constants.dart';
@@ -26,37 +27,32 @@ class RoutePage extends StatefulWidget {
   State<RoutePage> createState() => _RoutePageState();
 }
 
-class _RoutePageState extends State<RoutePage> {
-  final _routeController = RouteController.instance;
+class _RoutePageState extends State<RoutePage> with RouteAware {
+  final _routeController = RouteController();
   late final _markers = _routeController.markersSignal;
-
-  late final _directionResult = _routeController.directionResult;
-  late final _route = _directionResult.value.routes![0];
-  late final _leg = _route.legs![0];
+  late final _route = _routeController.route;
+  late final _leg = _routeController.leg;
 
   late final _customInfoWindowControllerSignal =
       _routeController.customInfoWindowControllerSignal;
 
-  bool _isLoading = true;
-
+  late final _pageControllerSignal = _routeController.pageControllerSignal;
   late final _pageViewTypeSignal = _routeController.pageViewTypeSignal;
-
   late final _showStepsPageSignal = _routeController.showStepsPageSignal;
-  late final Signal<PageController> _pageControllerSignal =
-      _routeController.pageControllerSignal;
+  bool _isLoading = true;
 
   void _toggleWidgets() {
     _showStepsPageSignal.value = !_showStepsPageSignal.value;
   }
 
-  List<Widget> _horizontalListButtons(BuildContext context, position) {
+  List<Widget> _horizontalListButtons() {
     return [
       CustomButton(
         label: 'Iniciar viagem',
         bgColor: Colors.tealAccent.shade400,
-        onPressed: () => Navigator.of(context).pushNamed(
+        onPressed: () => MyApp.navigatorKey.currentState?.pushNamed(
           AppRoutes.navigation,
-          arguments: [RouteController.getCopy()],
+          arguments: [_routeController.getCopy()],
         ),
       ),
       CustomButton(
@@ -85,8 +81,23 @@ class _RoutePageState extends State<RoutePage> {
   }
 
   @override
+  void didPopNext() {
+    _routeController.centerViewRoute();
+    // Avoid exception when the user returns from the navigation page and try access the info window
+    _customInfoWindowControllerSignal.value.hideInfoWindow!();
+    // Update markers when the user returns from the navigation page changing the customInfoWindowController with the new mapController
+    _routeController.updateAllRouteMarkers();
+  }
+
+  @override
+  void didChangeDependencies() {
+    MyApp.routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+    super.didChangeDependencies();
+  }
+
+  @override
   void dispose() {
-    RouteController.resetInstance();
+    MyApp.routeObserver.unsubscribe(this);
     super.dispose();
   }
 
@@ -135,14 +146,14 @@ class _RoutePageState extends State<RoutePage> {
                           child: Column(
                             children: [
                               Text(
-                                'Via: ${_route.summary!}',
+                                'Via: ${_route.value.summary!}',
                                 style: Theme.of(context).textTheme.bodyLarge,
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
-                                '${_leg.distance!.text} (${_leg.duration!.text})',
+                                '${_leg.value.distance!.text} (${_leg.value.duration!.text})',
                                 style: Theme.of(context).textTheme.titleLarge,
                                 textAlign: TextAlign.center,
                               ),
@@ -152,13 +163,13 @@ class _RoutePageState extends State<RoutePage> {
                         if (_showStepsPageSignal.value &&
                             _pageViewTypeSignal.value == 'route')
                           RouteStepsPageView(
-                            pageController: _pageControllerSignal.value,
-                            route: _route,
+                            routeController: _routeController,
                           ),
                         if (_showStepsPageSignal.value &&
                             _pageViewTypeSignal.value == 'spothole')
                           SpotholesPageView(
-                              pageController: _pageControllerSignal.value),
+                            routeController: _routeController,
+                          ),
                         Expanded(
                           child: Stack(
                             children: [
@@ -206,9 +217,7 @@ class _RoutePageState extends State<RoutePage> {
                                 visible: !_showStepsPageSignal.value,
                                 maintainState: true,
                                 child: RouteDraggableSheet(
-                                  controller: RouteDraggableSheetController(),
-                                  destinationLocation:
-                                      widget.destinationLocation,
+                                  routeController: _routeController,
                                 ),
                               ),
                               if (_showStepsPageSignal.value)
@@ -273,10 +282,7 @@ class _RoutePageState extends State<RoutePage> {
                               height: 60.0,
                               child: ListView(
                                 scrollDirection: Axis.horizontal,
-                                children: _horizontalListButtons(
-                                  context,
-                                  widget.destinationLocation,
-                                ),
+                                children: _horizontalListButtons(),
                               ),
                             ),
                           ),

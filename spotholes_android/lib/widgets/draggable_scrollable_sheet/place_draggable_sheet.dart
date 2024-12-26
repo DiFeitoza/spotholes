@@ -4,6 +4,7 @@ import 'package:spotholes_android/package/google_places_flutter/model/place_deta
 import 'package:spotholes_android/utilities/app_routes.dart';
 
 import '../../controllers/base_map_controller.dart';
+import '../../main.dart';
 import '../button/custom_button.dart';
 
 class PlaceDraggableSheetController {
@@ -35,23 +36,23 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
   late final _canvasColor = Theme.of(context).canvasColor;
 
   _loadRoute(position) {
-    Navigator.of(context).pushNamed(
+    MyApp.navigatorKey.currentState?.pushNamed(
       AppRoutes.route,
       arguments: [_baseMapController.currentLocationLatLng, position],
     );
   }
 
-  List<Widget> _horizontalListButtons(BuildContext context, position) {
+  List<Widget> _horizontalListButtons() {
     return [
       CustomButton(
         label: 'Rota',
         bgColor: Colors.tealAccent.shade400,
-        onPressed: () => _loadRoute(position),
+        onPressed: () => _loadRoute(widget.position),
       ),
       CustomButton(
         label: 'Alertar',
         onPressed: () =>
-            _baseMapController.registerSpotholeModal(position: position),
+            _baseMapController.registerSpotholeModal(position: widget.position),
       ),
     ];
   }
@@ -143,8 +144,7 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                             height: 60.0,
                             child: ListView(
                               scrollDirection: Axis.horizontal,
-                              children: _horizontalListButtons(
-                                  context, widget.position),
+                              children: _horizontalListButtons(),
                             ),
                           )
                         ],

@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 import 'package:spotholes_android/controllers/route_controller.dart';
 import 'package:spotholes_android/widgets/bullet_list.dart';
 
+import '../../main.dart';
 import '../button/custom_button.dart';
 
 class NavigationDraggableSheet extends StatefulWidget {
   const NavigationDraggableSheet({
     super.key,
     required this.routeController,
-    required this.destinationLocation,
   });
 
-  final LatLng destinationLocation;
   final RouteController routeController;
 
   @override
@@ -30,17 +28,11 @@ class NavigationDraggableSheetState extends State<NavigationDraggableSheet> {
   final _minDraggableChildSize = 0.25;
   final _intermediateDraggableChildSize = 0.4;
   final _maxDraggableChildSize = 1.0;
-  // int? _selectedIndex;
 
   late final _canvasColor = Theme.of(context).canvasColor;
 
-  late final _directionResult = _routeController.directionResult.value;
-  late final _route = _directionResult.routes![0];
-  late final _leg = _route.legs![0];
-  // late final _steps = _leg.steps!;
-
-  // late final _spotholesInRouteListSignal =
-  //     _routeController.spotholesInRouteList;
+  late final _route = _routeController.route;
+  late final _leg = _routeController.leg;
 
   @override
   void initState() {
@@ -53,7 +45,8 @@ class NavigationDraggableSheetState extends State<NavigationDraggableSheet> {
     }
   }
 
-  bool _haveWarnings() => _route.warnings?.isNotEmpty == true ? true : false;
+  bool _haveWarnings() =>
+      _route.value.warnings?.isNotEmpty == true ? true : false;
 
   void _showWarningsDialog() {
     showDialog(
@@ -73,7 +66,7 @@ class NavigationDraggableSheetState extends State<NavigationDraggableSheet> {
             ],
           ),
           content: BulletList(
-            items: _route.warnings!,
+            items: _route.value.warnings!,
           ),
           actions: [
             TextButton(
@@ -109,13 +102,8 @@ class NavigationDraggableSheetState extends State<NavigationDraggableSheet> {
     super.dispose();
   }
 
-  List<Widget> _horizontalListButtons(BuildContext context, position) {
+  List<Widget> _horizontalListButtons() {
     return [
-      // CustomButton(
-      //   label: 'Alertar Risco',
-      //   bgColor: Colors.tealAccent.shade400,
-      //   // onPressed: () => ,
-      // ),
       CustomButton(
         label: 'Centralizar',
         bgColor: Colors.tealAccent.shade400,
@@ -176,7 +164,7 @@ class NavigationDraggableSheetState extends State<NavigationDraggableSheet> {
                       ),
                       SliverAppBar(
                         title: Text(
-                          '${_leg.distance!.text} (${_leg.duration!.text})',
+                          '${_leg.value.distance!.text} (${_leg.value.duration!.text})',
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         primary: false,
@@ -213,7 +201,8 @@ class NavigationDraggableSheetState extends State<NavigationDraggableSheet> {
                             ),
                           IconButton(
                             icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.of(context).pop(),
+                            onPressed: () =>
+                                MyApp.navigatorKey.currentState?.pop(true),
                           ),
                         ],
                         // bottom: PreferredSize(
@@ -239,7 +228,7 @@ class NavigationDraggableSheetState extends State<NavigationDraggableSheet> {
                             child: Column(
                               children: [
                                 Text(
-                                  'Via: ${_route.summary!}',
+                                  'Via: ${_route.value.summary!}',
                                   style: Theme.of(context).textTheme.titleLarge,
                                   textAlign: TextAlign.center,
                                   maxLines: 2,
@@ -262,8 +251,7 @@ class NavigationDraggableSheetState extends State<NavigationDraggableSheet> {
               height: 60.0,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                children:
-                    _horizontalListButtons(context, widget.destinationLocation),
+                children: _horizontalListButtons(),
               ),
             ),
           ),

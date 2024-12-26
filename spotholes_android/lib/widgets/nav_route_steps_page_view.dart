@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:expandable_page_view/expandable_page_view.dart';
 import 'package:flutter/material.dart' hide Step;
 import 'package:flutter_html/flutter_html.dart' hide Marker;
-import 'package:google_directions_api/google_directions_api.dart';
 import 'package:signals/signals_flutter.dart';
 
 import '../controllers/route_controller.dart';
@@ -13,14 +12,12 @@ import '../utilities/maneuver_icons.dart';
 class NavRouteStepsPageView extends StatefulWidget {
   final RouteController routeController;
   final PageController pageController;
-  final Signal<DirectionsRoute> route;
   final Signal<bool> isPageViewUpdateCamera;
 
   const NavRouteStepsPageView({
     super.key,
     required this.routeController,
     required this.pageController,
-    required this.route,
     required this.isPageViewUpdateCamera,
   });
 
@@ -32,11 +29,9 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
   late final _routeController = widget.routeController;
   late final _pageController = widget.pageController;
   late final _isPageViewUpdateCamera = widget.isPageViewUpdateCamera;
-
   int _currentPage = 0;
 
-  late final _route = widget.route;
-  late final _leg = computed(() => _route.value.legs![0]);
+  late final _leg = _routeController.leg;
   late final _steps = _routeController.routeStepsLatLng;
 
   @override
@@ -164,7 +159,7 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
                     ),
                   ),
                 );
-                // Demais steps que contém manobras, excluindo a origem e o destino
+                // Demais steps que contêm manobras, excluindo a origem e o destino
               } else if (index >= 1 && index <= _steps.value.length) {
                 final step = _steps.value[index - 1];
                 final maneuver = step.maneuver ?? 'straight';

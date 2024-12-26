@@ -6,7 +6,6 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart' as fpp;
 import 'package:google_directions_api/google_directions_api.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
-import 'package:spotholes_android/package/extensions/directions_result_extension.dart';
 
 import '../config/environment_config.dart';
 import '../models/spothole.dart';
@@ -26,63 +25,76 @@ class RoutePointsData {
 }
 
 class RouteController {
-  RouteController._();
-  static RouteController? _instance;
-  static RouteController get instance => _instance ??= RouteController._();
-
-  static void resetInstance() {
-    _instance = null;
-  }
-
   final databaseReference = getIt<DatabaseReference>();
   late final dataBaseSpotholesRef = databaseReference.child('spotholes');
-  final _spotholesInRouteList = Signal<List<Spothole>>([]);
 
   final _googleMapControllerCompleter = Completer<GoogleMapController>();
-  get getGoogleMapController async =>
+  Future<GoogleMapController> get getGoogleMapController async =>
       await _googleMapControllerCompleter.future;
 
   final _customInfoWindowControllerSignal =
       Signal<CustomInfoWindowController>(CustomInfoWindowController());
-  get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
-
-  // Store all markers
-  final _markersSignal = Signal<Map<String, Marker>>({});
+  Signal<CustomInfoWindowController> get customInfoWindowControllerSignal =>
+      _customInfoWindowControllerSignal;
 
   late final _spotholeService = SpotholeService(
     _markersSignal,
     _customInfoWindowControllerSignal,
   );
 
-  // Store all polyline points
-  final _routePolylineCoordinatesSignal = Signal<List<LatLng>>([]);
-  // Store all polylines
-  final _polylinesSignal = Signal<Map<String, Polyline>>({});
-  // Store a result from a request for a route on Google Directions API
-  final _directionResult = Signal<DirectionsResult>(const DirectionsResult());
-  final Signal<List<Step>> _routeStepsLatLng = Signal<List<Step>>([]);
-  Signal<List<Step>> get routeStepsLatLng => _routeStepsLatLng;
-  final Signal<List<Step>> _auxRouteStepsLatLng = Signal<List<Step>>([]);
-
-  // Store steps' start indexes inside a route polyline
-  List<int> _stepsIndexes = [];
-  get stepsIndexes => _stepsIndexes;
-
-  Signal<List<Spothole>> get spotholesInRouteList => _spotholesInRouteList;
+  // Store all markers
+  var _markersSignal = Signal<Map<String, Marker>>({});
   Signal<Map<String, Marker>> get markersSignal => _markersSignal;
+
+  // Store all spotholes in route
+  var _spotholesInRouteList = Signal<List<Spothole>>([]);
+  Signal<List<Spothole>> get spotholesInRouteList => _spotholesInRouteList;
+
+  // Store all polylines
+  var _polylinesSignal = Signal<Map<String, Polyline>>({});
+  Signal<Map<String, Polyline>> get polylinesSignal => _polylinesSignal;
+
+  // Store all route polyline points
+  var _routePolylineCoordinatesSignal = Signal<List<LatLng>>([]);
   Signal<List<LatLng>> get routePolylineCoordinatesSignal =>
       _routePolylineCoordinatesSignal;
-  Signal<Map<String, Polyline>> get polylinesSignal => _polylinesSignal;
+
+  // Store a result from a request for a route on Google Directions API
+  var _directionResult = Signal<DirectionsResult>(const DirectionsResult());
   Signal<DirectionsResult> get directionResult => _directionResult;
 
+  // Common computed signal route variables
+  late final _route = computed(() => _directionResult.value.routes![0]);
+  Computed<DirectionsRoute> get route => _route;
+  late final _leg = computed(() => _route.value.legs![0]);
+  Computed<Leg> get leg => _leg;
+  late final _startLocation = computed(() => _leg.value.startLocation);
+  Computed<GeoCoord?> get startLocation => _startLocation;
+  late final _endLocation = computed(() => _leg.value.endLocation);
+  Computed<GeoCoord?> get endLocation => _endLocation;
+
+  late final _startLocationLatLng =
+      computed(() => geoCoordToLatLng(_startLocation.value!));
+  Computed<LatLng> get startLocationLatLng => _startLocationLatLng;
+
+  // This variable cannot be computed because it needs to be reactive as a List
+  var _routeStepsLatLng = Signal<List<Step>>([]);
+  Signal<List<Step>> get routeStepsLatLng => _routeStepsLatLng;
+  // This variable is just an independent copy of the routeStepsLatLng to mantain the original data
+  var _auxRouteStepsLatLng = Signal<List<Step>>([]);
+
+  // Store steps' start indexes inside a route polyline
+  var _stepsIndexes = <int>[];
+  List<int> get stepsIndexes => _stepsIndexes;
+
   final _showStepsPageSignal = signal(false);
-  get showStepsPageSignal => _showStepsPageSignal;
+  Signal<bool> get showStepsPageSignal => _showStepsPageSignal;
 
   final _pageViewTypeSignal = signal('');
-  get pageViewTypeSignal => _pageViewTypeSignal;
+  Signal<String> get pageViewTypeSignal => _pageViewTypeSignal;
 
   final _pageControllerSignal = Signal(PageController());
-  get pageControllerSignal => _pageControllerSignal;
+  Signal<PageController> get pageControllerSignal => _pageControllerSignal;
 
   void onMapCreated(mapController) {
     _customInfoWindowControllerSignal.value.googleMapController = mapController;
@@ -126,7 +138,10 @@ class RouteController {
   }
 
   void centerViewRoute() {
-    newCameraLatLngBounds(_routePolylineCoordinatesSignal.value);
+    // TODO criar snackbar ou desativar o botão quando houver menos de 2 pontos na polyline da rota
+    if (_routePolylineCoordinatesSignal.value.length > 1) {
+      newCameraLatLngBounds(_routePolylineCoordinatesSignal.value);
+    }
   }
 
   void newCameraLatLngBoundsFromStep(Step currentStep) {
@@ -353,111 +368,26 @@ class RouteController {
     _spotholeService.registerSpotholeModal(registerPosition);
   }
 
-  RouteController isolatedCopy() {
-    var copy = RouteController._();
-    copy._spotholesInRouteList.value = List.from(_spotholesInRouteList.value);
-    copy._markersSignal.value = Map.from(_markersSignal.value);
-    copy._polylinesSignal.value = Map.from(_polylinesSignal.value);
-    copy._routePolylineCoordinatesSignal.value =
-        List.from(_routePolylineCoordinatesSignal.value);
-    // Dica: Em tipos complexos, a nova instância do tipo pai, por si só não resolve pois as partes internas vão ser cópias por referência, a não ser que crie toda a estrutura interna até chegar nos objetos que precisa fazer a cópia por passagem, em vez de referência
-    copy._directionResult.value = _directionResult.value.copyWith();
-    copy._stepsIndexes = List.of(_stepsIndexes);
-    copy._routeStepsLatLng.value = List.from(_routeStepsLatLng.value);
-    copy._pageControllerSignal.value = PageController(initialPage: 1);
-    // Removi todos os casos de valores que são inicializados nulo no RouteController, assim eles são reinicializados e não retorna erro por duplicidade, como no caso
-    return copy;
-  }
-
-  RouteController copy() {
-    var copy = RouteController._();
-    copy._spotholesInRouteList.value = _spotholesInRouteList.value;
-    copy._markersSignal.value = _markersSignal.value;
-    copy._polylinesSignal.value = _polylinesSignal.value;
-    copy._routePolylineCoordinatesSignal.value =
-        _routePolylineCoordinatesSignal.value;
-    copy._directionResult.value = _directionResult.value;
+  RouteController getCopy() {
+    var copy = RouteController();
+    // Share the signals variables that need to be reactives between the RouteController instances
+    copy._markersSignal = _markersSignal;
+    copy._spotholesInRouteList = _spotholesInRouteList;
+    copy._polylinesSignal = _polylinesSignal;
+    copy._routePolylineCoordinatesSignal = _routePolylineCoordinatesSignal;
+    copy._directionResult = _directionResult;
+    copy._routeStepsLatLng = _routeStepsLatLng;
+    copy._auxRouteStepsLatLng = _auxRouteStepsLatLng;
     copy._stepsIndexes = _stepsIndexes;
-    copy._routeStepsLatLng.value = _routeStepsLatLng.value;
-    copy._auxRouteStepsLatLng.value = _auxRouteStepsLatLng.value;
-    // Removi todos os casos de valores que são inicializados nulo no RouteController, assim eles são reinicializados e não retorna erro por duplicidade, como no caso de widgets que precisam de controladores únicos
+    // Removi todos os casos de valores que são inicializados nulo no RouteController
+    // Principalmente controlladores, pois cada página precisa de um único por widget evitando erros por duplicidade.
     // copy._pageControllerSignal.value = PageController(initialPage: 1);
-    // copy._routeAndStepsListSignal.value =
-    //     List.from(_routeAndStepsListSignal.value);
     // copy._googleMapController = null;
     // copy._customInfoWindowControllerSignal.value =
     //     _customInfoWindowControllerSignal.value;
     // copy._spotholeService = _spotholeService;
     // copy._showStepsPageSignal.value = _showStepsPageSignal.value;
     // copy._pageViewTypeSignal.value = _pageViewTypeSignal.value;
-    // Torno null para não utilizar o msm controller em duas PageView diferentes
     return copy;
   }
-
-  static RouteController getCopy() {
-    return instance.copy();
-  }
-
-  // // TODO just for dev tests!
-  // List<String> routeToString(DirectionsResult response) {
-  //   List<String> strSteps = [];
-  //   String strRoute = '';
-  //   LatLng northeastBound =
-  //       geoCoordToLatLng(response.routes![0].bounds!.northeast);
-  //   LatLng southwestBound =
-  //       geoCoordToLatLng(response.routes![0].bounds!.southwest);
-  //   //BOUNDS
-  //   strRoute += 'northeastBound: ${latLngToString(northeastBound)}\n'
-  //       'southwestBound: ${latLngToString(southwestBound)}\n';
-  //   //SUMARY
-  //   strRoute += 'summary: ${response.routes![0].summary}\n';
-  //   //OVERVIEW PATH
-  //   List<GeoCoord> points = response.routes![0].overviewPath!;
-  //   strRoute += 'overviewPath: ';
-  //   for (GeoCoord geoCoord in points) {
-  //     strRoute += '${geoCoordToString(geoCoord)}, ';
-  //   }
-  //   strRoute += '\n';
-  //   //WARNINGS
-  //   final warnings = response.routes![0].warnings;
-  //   strRoute += 'Warnings:';
-  //   if (warnings != null) {
-  //     for (String? warning in warnings) {
-  //       strRoute += '${warning!}, ';
-  //     }
-  //   }
-  //   strRoute += '\n';
-  //   strSteps.add(strRoute);
-  //   //STEPS
-  //   List<Step> steps = response.routes![0].legs![0].steps!;
-  //   for (Step currentStep in steps) {
-  //     strSteps.add('Distância: ${currentStep.distance}\n'
-  //         'Duração: ${currentStep.duration!.text}\n'
-  //         'Start Location: ${geoCoordToString(currentStep.startLocation!)}\n'
-  //         'End Location: ${geoCoordToString(currentStep.endLocation!)}\n'
-  //         'Instructions: ${currentStep.instructions}\n'
-  //         'Maneuver: ${currentStep.maneuver}\n'
-  //         'Transit: ${currentStep.transit}\n'
-  //         'Travel Mode: ${currentStep.travelMode}\n');
-  //   }
-  //   //Update da string de ROTA e STEPS
-  //   _routeAndStepsListSignal.value = strSteps;
-  //   return strSteps;
-  // }
-
-  // // TODO just for dev tests!
-  // void showOverViewPathPoints(List<LatLng> points) {
-  //   Map<String, Marker> markers = {};
-  //   for (LatLng point in points) {
-  //     String strPoint = latLngToString(point);
-  //     markers[strPoint] = Marker(
-  //       markerId: MarkerId(strPoint),
-  //       position: point,
-  //     );
-  //   }
-  //   _markersSignal.value = {
-  //     ..._markersSignal.value,
-  //     ...markers,
-  //   };
-  // }
 }

@@ -21,9 +21,10 @@ class NavigationService {
     this._isPageViewUpdateCamera,
   );
 
-  late final Signal<List<LatLng>> _routePolylineCoordinatesSignal =
+  late final _routePolylineCoordinatesSignal =
       _routeController.routePolylineCoordinatesSignal;
-  late final List<int> _stepsIndexes = _routeController.stepsIndexes;
+  late final _stepsIndexes = _routeController.stepsIndexes;
+  late final _routeStepsLatLng = _routeController.routeStepsLatLng;
 
   int _discardedPointsCounter = 0;
   int _countOutOfRoute = 0;
@@ -78,7 +79,7 @@ class NavigationService {
   void updateRouteStatus(LatLng currentLocation) async {
     // TODO Verificar se há outras situações de fim da rota
     // Verifica se a rota está vazia, por exemplo: trajeto concluído.
-    if (_routeController.routeStepsLatLng.value.isEmpty) {
+    if (_routeStepsLatLng.value.isEmpty) {
       return;
     }
     routePointsMtk =
@@ -110,10 +111,9 @@ class NavigationService {
         }
         // Remove os steps que já passaram
         _stepsIndexes.removeRange(0, currentStepIndex);
-        _routeController.routeStepsLatLng.value
-            .removeRange(0, currentStepIndex);
+        _routeStepsLatLng.value.removeRange(0, currentStepIndex);
 
-        final stepsLength = _routeController.routeStepsLatLng.value.length;
+        final stepsLength = _routeStepsLatLng.value.length;
         final totalRemovedSteps = currentStepIndex;
         final page = _pageController.page!.toInt();
         // Verifica se o movimento de retorno do pageView termina no máximo na página 01 (step 0), se a página atual está entre a página 01 e a penúltima página (dentro da lista de steps)
@@ -121,10 +121,8 @@ class NavigationService {
           _isPageViewUpdateCamera.value = false;
           _pageController.jumpToPage(page - totalRemovedSteps);
         } else {
-          // É necessário atualizar para forçar a renderização do widget, porém assim evita duplicação do update porque o jumpToPage invoca um método que faz update da lista
-          _routeController.routeStepsLatLng.value = [
-            ..._routeController.routeStepsLatLng.value
-          ];
+          // É necessário atualizar para forçar a renderização do widget, porém, assim evita duplicação do update porque o jumpToPage invoca um método que faz update da lista
+          _routeStepsLatLng.value = [..._routeStepsLatLng.value];
         }
         debugPrint('---pages: ${_pageController.page} $currentStepIndex');
       }
@@ -134,18 +132,16 @@ class NavigationService {
       _routePolylineCoordinatesSignal.value[0] = currentLocation;
       _routeController.updateRoutePolyline();
       // Caso seja o último step e tenha menos que 3 pontos, então descarta o último step, pontos e conclui a rota
-    } else if (_routeController.routeStepsLatLng.value.length == 1 &&
+    } else if (_routeStepsLatLng.value.length == 1 &&
         _routePolylineCoordinatesSignal.value.length < 3) {
       _countOutOfRoute = 0;
       debugPrint('---Cheguei no final');
       _stepsIndexes.clear();
-      _routeController.routeStepsLatLng.value.clear();
+      _routeStepsLatLng.value.clear();
       _routePolylineCoordinatesSignal.value.clear();
       _routeController.clearManeuverPolyline();
       // Força update dos steps
-      _routeController.routeStepsLatLng.value = [
-        ..._routeController.routeStepsLatLng.value
-      ];
+      _routeStepsLatLng.value = [..._routeStepsLatLng.value];
     } else {
       _countOutOfRoute += 1;
       // Recalcula a rota após 5 movimentos consecutivos fora da rota (considerando a margem de tolerâcia em metros)
@@ -158,6 +154,6 @@ class NavigationService {
       }
     }
     debugPrint(
-        '----[Após descarte] points ${_routePolylineCoordinatesSignal.value.length} steps:${_routeController.routeStepsLatLng.value.length}');
+        '----[Após descarte] points ${_routePolylineCoordinatesSignal.value.length} steps:${_routeStepsLatLng.value.length}');
   }
 }

@@ -29,13 +29,10 @@ class DraggableScrollableSheetTypes {
   }
 
   static DraggableScrollableSheetType location(
-      {required Function onRegister,
-      required LatLng position,
-      required formattedPlacemark}) {
+      {required LatLng position, required formattedPlacemark}) {
     return DraggableScrollableSheetType(
       widget: LocationDraggableSheet(
         controller: LocationDraggableSheetController(),
-        onRegister: onRegister,
         position: position,
         formattedPlacemark: formattedPlacemark,
       ),

@@ -40,7 +40,7 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
     super.dispose();
   }
 
-  List<Widget> _horizontalListButtons(BuildContext context) {
+  List<Widget> _horizontalListButtons() {
     return [
       CustomButton(
         label: 'Buscar',
@@ -113,7 +113,7 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
                           height: 60.0,
                           child: ListView(
                             scrollDirection: Axis.horizontal,
-                            children: _horizontalListButtons(context),
+                            children: _horizontalListButtons(),
                           ),
                         )
                       ],

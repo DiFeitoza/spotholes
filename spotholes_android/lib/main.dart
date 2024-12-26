@@ -32,9 +32,15 @@ class MyApp extends StatelessWidget {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
+  static final RouteObserver<PageRoute> routeObserver =
+      RouteObserver<PageRoute>();
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // Implements the AppNavigatorObserver to handle all route changes
+      // navigatorObservers: [AppNavigatorObserver()],
+      navigatorObservers: [routeObserver],
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Spotholes',

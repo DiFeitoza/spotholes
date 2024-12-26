@@ -200,7 +200,6 @@ class BaseMapController {
       DraggableScrollableSheetTypes.location(
         position: position,
         formattedPlacemark: formattedPlacemark,
-        onRegister: () => spotholeService.registerSpotholeModal(position),
       ),
     );
   }

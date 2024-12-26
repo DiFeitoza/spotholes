@@ -26,18 +26,8 @@ class NavigationPage extends StatefulWidget {
 
 class _NavigationPageState extends State<NavigationPage> {
   late final _routeController = widget.routeController;
-
   late final _markers = _routeController.markersSignal;
-
-  late final _directionResult = _routeController.directionResult;
-  late final _route = _directionResult.value.routes![0];
-  late final _leg = _route.legs![0];
-  late final _sourceLocation =
-      _routeController.geoCoordToLatLng(_leg.startLocation!);
-  late final _destinationLocation =
-      _routeController.geoCoordToLatLng(_leg.endLocation!);
-
-  late final _routeSignal = signal(_route);
+  late final _startLocationLatLng = _routeController.startLocationLatLng;
 
   late final _navigationController = NavigationController(_routeController);
 
@@ -91,7 +81,6 @@ class _NavigationPageState extends State<NavigationPage> {
                     (_) => NavRouteStepsPageView(
                       routeController: _routeController,
                       pageController: _navigationController.pageController,
-                      route: _routeSignal,
                       isPageViewUpdateCamera: _isPageViewUpdateCamera,
                     ),
                   ),
@@ -111,7 +100,7 @@ class _NavigationPageState extends State<NavigationPage> {
                                         .onMapCreated(controller);
                                   },
                                   initialCameraPosition: CameraPosition(
-                                    target: _sourceLocation,
+                                    target: _startLocationLatLng.value,
                                     zoom: defaultZoomMap,
                                     tilt: 45,
                                   ),
@@ -146,7 +135,6 @@ class _NavigationPageState extends State<NavigationPage> {
                         ),
                         NavigationDraggableSheet(
                           routeController: _routeController,
-                          destinationLocation: _destinationLocation,
                         ),
                         Positioned(
                           bottom: 220,
