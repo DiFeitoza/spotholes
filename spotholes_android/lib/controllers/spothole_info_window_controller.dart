@@ -37,7 +37,6 @@ class SpotholeInfoWindowController {
   }
 
   void addSpotholeMarker(Spothole spothole) {
-    final context = MyApp.navigatorKey.currentContext;
     final marker = Marker(
       markerId: MarkerId(spothole.id!),
       icon: spothole.type == Type.deepHole
@@ -48,9 +47,9 @@ class SpotholeInfoWindowController {
         _customInfoWindowControllerSignal.value.addInfoWindow!(
           SpotholeInfoWindow(
             editSpothole: () => editSpotholeModal(
-                context, spothole.id!, spothole.category, spothole.type),
+                spothole.id!, spothole.category, spothole.type),
             showDeleteSpotholeAlertDialog: () =>
-                showDeleteSpotholeAlertDialog(context, spothole.id!),
+                showDeleteSpotholeAlertDialog(spothole.id!),
             spothole: spothole,
           ),
           spothole.position,
@@ -60,7 +59,7 @@ class SpotholeInfoWindowController {
     _markersSignal.value[spothole.id!] = marker;
   }
 
-  void editSpothole(context, spotholeId, riskCategory, type) async {
+  void editSpothole(String spotholeId, Category riskCategory, Type type) async {
     final dateOfUpdate = DateTime.now().toUtc();
     final spotholeRef = databaseReference.ref.child('spotholes/$spotholeId');
     final event = await spotholeRef.once();
@@ -77,7 +76,9 @@ class SpotholeInfoWindowController {
     spotholeRef.set(spothole.toJson());
   }
 
-  void editSpotholeModal(context, spotholeId, riskCategory, riskType) {
+  void editSpotholeModal(
+      String spotholeId, Category riskCategory, Type riskType) {
+    final context = MyApp.navigatorKey.currentContext!;
     showModalBottomSheet(
       context: context,
       builder: (builder) {
@@ -85,8 +86,8 @@ class SpotholeInfoWindowController {
           title: "Para editar um risco, selecione:",
           textOnRegisterButton: "Editar",
           isCountdown: false,
-          onRegister: (riskCategory, type) =>
-              editSpothole(context, spotholeId, riskCategory, type),
+          onRegister: (Category riskCategory, Type type) =>
+              editSpothole(spotholeId, riskCategory, type),
           riskCategory: riskCategory,
           riskType: riskType,
         );
@@ -94,7 +95,8 @@ class SpotholeInfoWindowController {
     );
   }
 
-  void showDeleteSpotholeAlertDialog(context, String spotholeId) {
+  void showDeleteSpotholeAlertDialog(String spotholeId) {
+    final context = MyApp.navigatorKey.currentContext!;
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {

@@ -136,12 +136,7 @@ class NavigationService {
         _routePolylineCoordinatesSignal.value.length < 3) {
       _countOutOfRoute = 0;
       debugPrint('---Cheguei no final');
-      _stepsIndexes.clear();
-      _routeStepsLatLng.value.clear();
-      _routePolylineCoordinatesSignal.value.clear();
-      _routeController.clearManeuverPolyline();
-      // Força update dos steps
-      _routeStepsLatLng.value = [..._routeStepsLatLng.value];
+      _routeController.finishNavigationRoute();
     } else {
       _countOutOfRoute += 1;
       // Recalcula a rota após 5 movimentos consecutivos fora da rota (considerando a margem de tolerâcia em metros)

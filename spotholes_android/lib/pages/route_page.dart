@@ -126,7 +126,7 @@ class _RoutePageState extends State<RoutePage> with RouteAware {
                   centerTitle: true,
                   title: !_showStepsPageSignal.value
                       ? Text(
-                          "Seu local ➞ Destino",
+                          "Rota",
                           style: Theme.of(context).textTheme.titleLarge,
                         )
                       : Text(
@@ -145,18 +145,27 @@ class _RoutePageState extends State<RoutePage> with RouteAware {
                           color: Theme.of(context).focusColor,
                           child: Column(
                             children: [
-                              Text(
-                                'Via: ${_route.value.summary!}',
-                                style: Theme.of(context).textTheme.bodyLarge,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                '${_leg.value.distance!.text} (${_leg.value.duration!.text})',
-                                style: Theme.of(context).textTheme.titleLarge,
-                                textAlign: TextAlign.center,
-                              ),
+                              if (_route.value.summary!.isNotEmpty)
+                                Text(
+                                  'Via: ${_route.value.summary!}',
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.two_wheeler),
+                                  const SizedBox(width: 8.0),
+                                  Text(
+                                    '${_leg.value.distance!.text} (${_leg.value.duration!.text})',
+                                    style:
+                                        Theme.of(context).textTheme.titleLarge,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              )
                             ],
                           ),
                         ),

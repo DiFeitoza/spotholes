@@ -165,7 +165,7 @@ class BaseMapController {
     _spotholeService.loadSpotholeMarkers();
   }
 
-  void registerSpotholeModal({LatLng? position}) {
+  void registerSpotholeModal([LatLng? position]) {
     final registerPosition = position ?? currentLocationLatLng;
     _spotholeService.registerSpotholeModal(registerPosition);
   }

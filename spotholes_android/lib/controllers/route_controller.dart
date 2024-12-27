@@ -8,6 +8,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 
 import '../config/environment_config.dart';
+import '../main.dart';
 import '../models/spothole.dart';
 import '../package/custom_info_window.dart';
 import '../services/location_service.dart';
@@ -18,6 +19,7 @@ import '../utilities/custom_icons.dart';
 import '../utilities/maneuver_arrow_polyline.dart';
 import '../utilities/map_utils.dart';
 import '../widgets/info_window/marker_info_window.dart';
+import '../widgets/route_finished_alert_dialog.dart';
 
 class RoutePointsData {
   List<LatLng> points;
@@ -332,7 +334,7 @@ class RouteController {
       if (updateCamera) updateCameraGeoCoord(currentStep.startLocation!);
       final previousStepIndex =
           _auxRouteStepsLatLng.value.indexOf(currentStep) - 1;
-      if (previousStepIndex == 0) {
+      if (previousStepIndex < 0) {
         maneuverPoints = [sourceLocation, ...maneuverPoints];
         midpointIndex = 1;
       } else {
@@ -389,6 +391,36 @@ class RouteController {
 
   void registerSpotholeModal(LatLng registerPosition) {
     _spotholeService.registerSpotholeModal(registerPosition);
+  }
+
+  void routeFinishedShowDialog() => showDialog(
+        context: MyApp.navigatorKey.currentContext!,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) {
+          return RouteFinishedAlertDialogs(
+            onConfirm: () {
+              MyApp.navigatorKey.currentState
+                  ?.popUntil((route) => route.isFirst);
+            },
+          );
+        },
+      );
+
+  void finishNavigationRoute() async {
+    // Clear essential route data
+    _polylinesSignal.value.clear();
+    _routePolylineCoordinatesSignal.value.clear();
+    _routeStepsLatLng.value.clear();
+    _stepsIndexes.clear();
+    clearManeuverPolyline();
+    routeFinishedShowDialog();
+    // _markersSignal.value.clear();
+    // _auxRouteStepsLatLng.value.clear();
+    // _showStepsPageSignal.value = false;
+    // _pageViewTypeSignal.value = '';
+    // _pageControllerSignal.value.dispose();
+    // Force update of steps
+    // _routeStepsLatLng.value = [..._routeStepsLatLng.value];
   }
 
   RouteController getCopy() {

@@ -75,7 +75,7 @@ class SpotholeService {
     _markersSignal.value = {..._markersSignal.value};
   }
 
-  void registerSpothole(LatLng position, category, type) {
+  void registerSpothole(LatLng position, Category category, Type type) {
     final newSpotHoleRef = dataBaseSpotholesRef.push();
     final newSpothole = Spothole(
       DateTime.now().toUtc(),
@@ -91,7 +91,7 @@ class SpotholeService {
     _markersSignal.value = {..._markersSignal.value};
   }
 
-  void registerSpotholeModal(position) {
+  void registerSpotholeModal(LatLng position) {
     final context = MyApp.navigatorKey.currentContext;
     showModalBottomSheet(
       context: context!,
@@ -99,8 +99,11 @@ class SpotholeService {
         return RegisterSpotholeModal(
           title: "Para alertar um risco, selecione:",
           textOnRegisterButton: "Adicionar",
-          onRegister: (riskCategory, type) =>
-              registerSpothole(position, riskCategory, type),
+          onRegister: (
+              [Category riskCategory = Category.unitary,
+              Type type = Type.pothole]) {
+            registerSpothole(position, riskCategory, type);
+          },
         );
       },
     );
