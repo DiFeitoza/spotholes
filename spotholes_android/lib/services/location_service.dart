@@ -16,9 +16,12 @@ class LocationService {
   final _location = Location();
 
   final _currentLocationSignal = Signal<LocationData?>(null);
-  get currentLocationSignal => _currentLocationSignal;
-  get currentLocationLatLng => LatLng(_currentLocationSignal.value!.latitude!,
-      _currentLocationSignal.value!.longitude!);
+  Signal<LocationData?> get currentLocationSignal => _currentLocationSignal;
+
+  LatLng get currentLocationLatLng => LatLng(
+        _currentLocationSignal.value!.latitude!,
+        _currentLocationSignal.value!.longitude!,
+      );
 
   String currentLocationLatLngURLPattern() =>
       "${_currentLocationSignal.value!.latitude!.toString()}"

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:spotholes_android/package/google_places_flutter/model/place_details.dart';
-import 'package:spotholes_android/utilities/app_routes.dart';
 
 import '../../controllers/base_map_controller.dart';
 import '../../main.dart';
+import '../../package/google_places_flutter/model/place_details.dart';
+import '../../utilities/app_routes.dart';
 import '../button/custom_button.dart';
 
 class PlaceDraggableSheetController {
@@ -16,15 +16,17 @@ class PlaceDraggableSheetController {
 }
 
 class PlaceDraggableSheet extends StatefulWidget {
-  const PlaceDraggableSheet(
-      {super.key,
-      required this.controller,
-      required this.position,
-      required this.placeDetails});
-
-  final PlaceDraggableSheetController controller;
   final LatLng position;
   final PlaceDetails placeDetails;
+
+  final BaseMapController baseMapController;
+
+  const PlaceDraggableSheet({
+    super.key,
+    required this.position,
+    required this.placeDetails,
+    required this.baseMapController,
+  });
 
   @override
   PlaceDraggableSheetState createState() => PlaceDraggableSheetState();
@@ -32,13 +34,14 @@ class PlaceDraggableSheet extends StatefulWidget {
 
 class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
   final ScrollController scrollController = ScrollController();
-  final _baseMapController = BaseMapController.instance;
+  late final baseMapController = widget.baseMapController;
+
   late final _canvasColor = Theme.of(context).canvasColor;
 
   _loadRoute(position) {
     MyApp.navigatorKey.currentState?.pushNamed(
       AppRoutes.route,
-      arguments: [_baseMapController.currentLocationLatLng, position],
+      arguments: [baseMapController.currentLocationLatLng, position],
     );
   }
 
@@ -52,13 +55,13 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
       CustomButton(
         label: 'Alertar',
         onPressed: () =>
-            _baseMapController.registerSpotholeModal(position: widget.position),
+            baseMapController.registerSpotholeModal(position: widget.position),
       ),
     ];
   }
 
   void closeDraggable() {
-    _baseMapController.closeDraggableSheet('selectedPlace');
+    baseMapController.closeDraggableSheet('selectedPlace');
   }
 
   @override

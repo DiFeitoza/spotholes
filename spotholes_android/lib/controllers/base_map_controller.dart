@@ -19,52 +19,51 @@ import '../widgets/draggable_scrollable_sheet/draggable_scrollable_sheet_type.da
 import '../widgets/info_window/marker_info_window.dart';
 
 class BaseMapController {
-  BaseMapController._();
-  static BaseMapController _instance = BaseMapController._();
-  static BaseMapController get instance => _instance;
-
-  static void resetInstance() {
-    _instance = BaseMapController._();
-  }
-
   Function? _dispose;
 
   final LocationService _locationService = LocationService.instance;
 
-  late final Signal<LocationData?> _currentLocationSignal =
-      _locationService.currentLocationSignal;
-  get currentLocationSignal => _currentLocationSignal;
-  get currentLocationLatLng => LatLng(_currentLocationSignal.value!.latitude!,
+  late final _currentLocationSignal = _locationService.currentLocationSignal;
+  Signal<LocationData?> get currentLocationSignal => _currentLocationSignal;
+
+  LatLng get currentLocationLatLng => LatLng(
+      _currentLocationSignal.value!.latitude!,
       _currentLocationSignal.value!.longitude!);
 
   final databaseReference = getIt<DatabaseReference>();
   late final dataBaseSpotholesRef = databaseReference.child('spotholes');
 
   final _googleMapControllerCompleter = Completer<GoogleMapController>();
-  get getGoogleMapController async =>
+  Future<GoogleMapController> get getGoogleMapController async =>
       await _googleMapControllerCompleter.future;
 
   final _customInfoWindowControllerSignal =
       Signal<CustomInfoWindowController>(CustomInfoWindowController());
-  get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
+  Signal<CustomInfoWindowController> get customInfoWindowControllerSignal =>
+      _customInfoWindowControllerSignal;
 
   final _markersSignal = Signal<Map<String, Marker>>({});
-  get markersSignal => _markersSignal;
+  Signal<Map<String, Marker>> get markersSignal => _markersSignal;
 
-  late final spotholeService = SpotholeService(
+  late final _spotholeService = SpotholeService(
     _markersSignal,
     _customInfoWindowControllerSignal,
   );
 
   final _textEditingController = TextEditingController();
-  get textEditingController => _textEditingController;
+  TextEditingController get textEditingController => _textEditingController;
 
   final _searchBarFocusNode = FocusNode();
-  get searchBarFocusNode => _searchBarFocusNode;
+  FocusNode get searchBarFocusNode => _searchBarFocusNode;
 
-  late Signal draggableScrollableSheetSignal = signal(
-    DraggableScrollableSheetTypes.initial.widget,
+  late final _draggableScrollableSheetTypes =
+      DraggableScrollableSheetTypes(baseMapController: this);
+
+  late final _draggableScrollableSheetSignal = signal(
+    _draggableScrollableSheetTypes.initial.widget,
   );
+  Signal<Widget> get draggableScrollableSheetSignal =>
+      _draggableScrollableSheetSignal;
 
   final _geocodingService = GeocodingService.instance;
   final isTrackingLocation = signal(true);
@@ -74,7 +73,7 @@ class BaseMapController {
     _customInfoWindowControllerSignal.value.googleMapController = mapController;
     _googleMapControllerCompleter.complete(mapController);
     listenCurrentLocation();
-    spotholeService.loadSpotholeMarkers();
+    _spotholeService.loadSpotholeMarkers();
   }
 
   void trackLocation() {
@@ -129,7 +128,7 @@ class BaseMapController {
   void closeDraggableSheet(String key) {
     _customInfoWindowControllerSignal.value.hideInfoWindow!();
     removeMarkerByKey(key);
-    changeDraggableSheet(DraggableScrollableSheetTypes.initial);
+    changeDraggableSheet(_draggableScrollableSheetTypes.initial);
     isTrackingLocation.value = true;
     centerView();
   }
@@ -142,15 +141,20 @@ class BaseMapController {
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
       position: position,
       onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
-          MarkerInfoWindow(
-              title: 'Resultado da Busca',
-              textContent: placeDetails.result!.name ??
-                  'Latitude: ${placeLocation.lat!}\rLongitude: ${placeLocation.lng!}'),
-          position),
+        MarkerInfoWindow(
+          title: 'Resultado da Busca',
+          textContent: placeDetails.result!.name ??
+              'Latitude: ${placeLocation.lat!}\rLongitude: ${placeLocation.lng!}',
+        ),
+        position,
+      ),
     );
     updateCameraGoogleMapsController(position);
     changeDraggableSheet(DraggableScrollableSheetTypes.place(
-        placeDetails: placeDetails, position: position));
+      placeDetails: placeDetails,
+      position: position,
+      baseMapController: this,
+    ));
   }
 
   void removeMarkerByKey(key) {
@@ -158,12 +162,12 @@ class BaseMapController {
   }
 
   void loadSpotholeMarkers() {
-    spotholeService.loadSpotholeMarkers();
+    _spotholeService.loadSpotholeMarkers();
   }
 
   void registerSpotholeModal({LatLng? position}) {
     final registerPosition = position ?? currentLocationLatLng;
-    spotholeService.registerSpotholeModal(registerPosition);
+    _spotholeService.registerSpotholeModal(registerPosition);
   }
 
   void onLongPress(BuildContext context, LatLng position) async {
@@ -180,9 +184,10 @@ class BaseMapController {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) {
           CustomSnackbar.show(
-              context: context,
-              message:
-                  'Não foi possível carregar informações, verifique a conexão com a internet');
+            context: context,
+            message:
+                'Não foi possível carregar informações, verifique a conexão com a internet',
+          );
         },
       );
     }
@@ -190,16 +195,18 @@ class BaseMapController {
       markerId: MarkerId(position.toString()),
       position: position,
       onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
-          MarkerInfoWindow(
-            title: 'Local Aproximado',
-            textContent: windowInfo,
-          ),
-          position),
+        MarkerInfoWindow(
+          title: 'Local Aproximado',
+          textContent: windowInfo,
+        ),
+        position,
+      ),
     );
     changeDraggableSheet(
       DraggableScrollableSheetTypes.location(
         position: position,
         formattedPlacemark: formattedPlacemark,
+        baseMapController: this,
       ),
     );
   }

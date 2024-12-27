@@ -16,7 +16,7 @@ class BaseMapPage extends StatefulWidget {
 }
 
 class BaseMapPageState extends State<BaseMapPage> {
-  final _baseMapController = BaseMapController.instance;
+  final _baseMapController = BaseMapController();
   late final _customInfoWindowControllerSignal =
       _baseMapController.customInfoWindowControllerSignal;
   late final _markersSignal = _baseMapController.markersSignal;
@@ -85,8 +85,12 @@ class BaseMapPageState extends State<BaseMapPage> {
                       CustomInfoWindow(
                         controller: _customInfoWindowControllerSignal.value,
                       ),
-                      CustomFloatingActionButtonList(),
-                      const CustomHeader(),
+                      CustomFloatingActionButtonList(
+                        baseMapController: _baseMapController,
+                      ),
+                      CustomHeader(
+                        baseMapController: _baseMapController,
+                      ),
                       _draggableScrollableSheetSignal.value,
                     ],
                   ),
