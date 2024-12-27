@@ -10,6 +10,7 @@ import 'package:signals/signals_flutter.dart';
 import '../config/environment_config.dart';
 import '../models/spothole.dart';
 import '../package/custom_info_window.dart';
+import '../services/location_service.dart';
 import '../services/service_locator.dart';
 import '../services/spothole_service.dart';
 import '../utilities/constants.dart';
@@ -76,6 +77,8 @@ class RouteController {
   late final _startLocationLatLng =
       computed(() => geoCoordToLatLng(_startLocation.value!));
   Computed<LatLng> get startLocationLatLng => _startLocationLatLng;
+  late final _endLocationLatLng =
+      computed(() => geoCoordToLatLng(_endLocation.value!));
 
   // This variable cannot be computed because it needs to be reactive as a List
   var _routeStepsLatLng = Signal<List<Step>>([]);
@@ -96,9 +99,28 @@ class RouteController {
   final _pageControllerSignal = Signal(PageController());
   Signal<PageController> get pageControllerSignal => _pageControllerSignal;
 
+  final LocationService _locationService = LocationService.instance;
+  late final _currentLocationSignal = _locationService.currentLocationSignal;
+
+  static Function? _dispose;
+
+  void listenCurrentLocation() async {
+    _dispose = effect(() {
+      if (_currentLocationSignal.value != null) {
+        untracked(() {
+          _locationService.loadCurrentLocationMark(
+            markersSignal,
+            customInfoWindowControllerSignal,
+          );
+        });
+      }
+    });
+  }
+
   void onMapCreated(mapController) {
     _customInfoWindowControllerSignal.value.googleMapController = mapController;
     _googleMapControllerCompleter.complete(mapController);
+    listenCurrentLocation();
   }
 
   GeoCoord latLngToGeoCoord(LatLng latLng) =>
@@ -145,9 +167,10 @@ class RouteController {
   }
 
   void newCameraLatLngBoundsFromStep(Step currentStep) {
-    final startLocationLatLng = geoCoordToLatLng(currentStep.startLocation!);
-    final endLocationLatLng = geoCoordToLatLng(currentStep.endLocation!);
-    newCameraLatLngBounds([startLocationLatLng, endLocationLatLng]);
+    final startLocationStepLatLng =
+        geoCoordToLatLng(currentStep.startLocation!);
+    final endLocationStepLatLng = geoCoordToLatLng(currentStep.endLocation!);
+    newCameraLatLngBounds([startLocationStepLatLng, endLocationStepLatLng]);
   }
 
   void newCameraLatLngBounds(List<LatLng> polylineCoordinates) async {
@@ -233,29 +256,31 @@ class RouteController {
     );
   }
 
-  void loadRouteMarkers(sourceLocation, destinationLocation) {
+  void loadRouteMarkers(LatLng startLocation, LatLng endLocation) {
     Marker sourceRouteMarker = Marker(
       markerId: const MarkerId("sourceRoute"),
       icon: CustomIcons.sourceIcon,
-      position: sourceLocation,
+      position: startLocation,
       onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
-          const MarkerInfoWindow(
-            title: 'Rota',
-            textContent: 'Início da Rota',
-          ),
-          sourceLocation),
+        const MarkerInfoWindow(
+          title: 'Rota',
+          textContent: 'Início da Rota',
+        ),
+        startLocation,
+      ),
     );
 
     Marker destinationRouteMarker = Marker(
       markerId: const MarkerId("destinationRoute"),
       icon: CustomIcons.destinationIcon,
-      position: destinationLocation,
+      position: endLocation,
       onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
-          const MarkerInfoWindow(
-            title: 'Rota',
-            textContent: 'Destino da Rota',
-          ),
-          destinationLocation),
+        const MarkerInfoWindow(
+          title: 'Rota',
+          textContent: 'Destino da Rota',
+        ),
+        endLocation,
+      ),
     );
 
     _markersSignal.value = {
@@ -267,10 +292,8 @@ class RouteController {
 
   // Update context and controllers related to the markers
   void updateAllRouteMarkers() {
-    final sourceLocation = markersSignal.value['sourceRouteMarker']!.position;
-    final destinationLocation =
-        markersSignal.value['destinationRouteMarker']!.position;
-    loadRouteMarkers(sourceLocation, destinationLocation);
+    listenCurrentLocation();
+    loadRouteMarkers(_startLocationLatLng.value, _endLocationLatLng.value);
     _spotholeService.addSpotholeMarkers(spotholesInRouteList);
   }
 
@@ -389,5 +412,9 @@ class RouteController {
     // copy._showStepsPageSignal.value = _showStepsPageSignal.value;
     // copy._pageViewTypeSignal.value = _pageViewTypeSignal.value;
     return copy;
+  }
+
+  static dispose() {
+    _dispose!();
   }
 }

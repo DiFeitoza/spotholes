@@ -62,10 +62,6 @@ class NavigationController {
           final double heading = _currentLocationSignal.value!.heading!;
           untracked(
             () {
-              _locationService.loadCurrentLocationMark(
-                _routeController.markersSignal,
-                _routeController.customInfoWindowControllerSignal,
-              );
               _navigationService.updateRouteStatus(currentLocation);
             },
           );

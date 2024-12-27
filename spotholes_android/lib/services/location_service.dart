@@ -2,6 +2,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:signals/signals_flutter.dart';
 
+import '../package/custom_info_window.dart';
 import '../utilities/custom_icons.dart';
 import '../widgets/info_window/marker_info_window.dart';
 
@@ -27,8 +28,10 @@ class LocationService {
       "${_currentLocationSignal.value!.latitude!.toString()}"
       "%2C${_currentLocationSignal.value!.longitude!.toString()}";
 
-  void loadCurrentLocationMark(Signal<Map<String, Marker>> markersSignal,
-      final customInfoWindowControllerSignal) {
+  void loadCurrentLocationMark(
+    Signal<Map<String, Marker>> markersSignal,
+    Signal<CustomInfoWindowController> customInfoWindowControllerSignal,
+  ) {
     final newMarker = Marker(
       markerId: const MarkerId("currentLocationMarker"),
       icon: CustomIcons.currentLocationIcon,

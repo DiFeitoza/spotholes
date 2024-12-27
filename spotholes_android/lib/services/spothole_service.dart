@@ -19,7 +19,9 @@ class SpotholeService {
   final Signal<CustomInfoWindowController> _customInfoWindowControllerSignal;
 
   late final _spotholeInfoWindowController = SpotholeInfoWindowController(
-      _customInfoWindowControllerSignal, _markersSignal);
+    _customInfoWindowControllerSignal,
+    _markersSignal,
+  );
 
   SpotholeService(this._markersSignal, this._customInfoWindowControllerSignal);
 
