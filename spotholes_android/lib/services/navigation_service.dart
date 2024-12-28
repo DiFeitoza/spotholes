@@ -77,8 +77,8 @@ class NavigationService {
   }
 
   void updateRouteStatus(LatLng currentLocation) async {
-    // TODO Verificar se há outras situações de fim da rota
-    // Verifica se a rota está vazia, por exemplo: trajeto concluído.
+    // TODO Check if there are other end-of-route situations
+    /// Checks if the route is empty, for example: route completed.
     if (_routeStepsLatLng.value.isEmpty) {
       return;
     }
@@ -87,61 +87,62 @@ class NavigationService {
     mtk.LatLng currentLocationMtk = locationToMtkLatLng(currentLocation);
     int index = locationIndexOnPath(currentLocationMtk, routePointsMtk);
     debugPrint('----index on polyline: $index');
-    // Se a localização atual está na rota
+    /// If the current location is on the route
     if (index > 0) {
       _countOutOfRoute = 0;
-      // Define a posição inicial para a localização atual
+      /// Set the initial position to the current location
       routePointsMtk[index] = currentLocationMtk;
-      // Remove os pontos iniciais até a posição atual
+      /// Remove the initial points up to the current position
       routePointsMtk.removeRange(0, index + 1);
       _routePolylineCoordinatesSignal.value.removeRange(0, index + 1);
       _routePolylineCoordinatesSignal.value[0] = currentLocation;
       _routeController.updateRoutePolyline();
-      // Atualiza o contador de pontos descartados
+      /// Update the discarded points counter
       _discardedPointsCounter += index + 1;
-      debugPrint('Pontos a descartar $_discardedPointsCounter');
-      // Verifica o step atual na rota
+      debugPrint('Points to discard $_discardedPointsCounter');
+      /// Check the current step on the route
       int currentStepIndex = verifyStep();
-      // Se o step avançou, o pageview é atualizado
+      /// If the step has advanced, the pageview is updated
       if (currentStepIndex > 0 && _pageController.hasClients) {
-        // Atualiza a polyline que representa a seta de manobra no mapa. Precisa ser feito antes de remover os steps
+        /// Update the polyline that represents the maneuver arrow on the map. Needs to be done before removing the steps
         if (_isTrackingLocation.value || _pageController.page == 1) {
           _routeController.plotManeuverPolyline(currentStepIndex,
               updateCamera: false);
         }
-        // Remove os steps que já passaram
+        /// Remove the steps that have passed
         _stepsIndexes.removeRange(0, currentStepIndex);
         _routeStepsLatLng.value.removeRange(0, currentStepIndex);
 
         final stepsLength = _routeStepsLatLng.value.length;
         final totalRemovedSteps = currentStepIndex;
         final page = _pageController.page!.toInt();
-        // Verifica se o movimento de retorno do pageView termina no máximo na página 01 (step 0), se a página atual está entre a página 01 e a penúltima página (dentro da lista de steps)
+        /// Check if the pageView return movement ends at most on page 01 (step 0)
+        /// if the current page is between page 01 and the penultimate page (within the steps list)
         if (totalRemovedSteps < page && page > 1 && page < stepsLength + 2) {
           _isPageViewUpdateCamera.value = false;
           _pageController.jumpToPage(page - totalRemovedSteps);
         } else {
-          // É necessário atualizar para forçar a renderização do widget, porém, assim evita duplicação do update porque o jumpToPage invoca um método que faz update da lista
+          /// It is necessary to update to force the widget to render, however, this avoids duplication of the update because the jumpToPage invokes a method that updates the list
           _routeStepsLatLng.value = [..._routeStepsLatLng.value];
         }
         debugPrint('---pages: ${_pageController.page} $currentStepIndex');
       }
-      // Caso esteja entre a posição 0 e 1 da polyline (index == 0), então a polyline é atualizada
+      /// If it is between position 0 and 1 of the polyline (index == 0), then the polyline is updated
     } else if (index == 0) {
       _countOutOfRoute = 0;
       _routePolylineCoordinatesSignal.value[0] = currentLocation;
       _routeController.updateRoutePolyline();
-      // Caso seja o último step e tenha menos que 3 pontos, então descarta o último step, pontos e conclui a rota
+      /// If it is the last step and has less than 3 points, then discard the last step, points and complete the route
     } else if (_routeStepsLatLng.value.length == 1 &&
         _routePolylineCoordinatesSignal.value.length < 3) {
       _countOutOfRoute = 0;
-      debugPrint('---Cheguei no final');
+      debugPrint('---Reached the end');
       _routeController.finishNavigationRoute();
     } else {
       _countOutOfRoute += 1;
-      // Recalcula a rota após 5 movimentos consecutivos fora da rota (considerando a margem de tolerâcia em metros)
-      // Apenas recalcula a rota 3 vezes de forma automática, evitando falhas que gerem muitos recálculos
-      // TODO Criar Snackbar para avisar que ultrapassou o limite de 3 vezes, perguntando se quer recalcular de forma manual, caso sim, mais 3 automáticos
+      /// Recalculate the route after 5 consecutive movements off the route (considering the tolerance margin in meters)
+      /// Only recalculate the route 3 times automatically, avoiding failures that generate many recalculations
+      // TODO Create Snackbar to warn that the limit of 3 times has been exceeded, asking if you want to recalculate manually, if yes, 3 more automatic recalculations
       if (_countOutOfRoute > 5 && _countRecalculatedRoute <= 3) {
         _countOutOfRoute = 0;
         _routeController.recalculateRoute(currentLocation);
@@ -149,6 +150,6 @@ class NavigationService {
       }
     }
     debugPrint(
-        '----[Após descarte] points ${_routePolylineCoordinatesSignal.value.length} steps:${_routeStepsLatLng.value.length}');
+        '----[After discard] points ${_routePolylineCoordinatesSignal.value.length} steps:${_routeStepsLatLng.value.length}');
   }
 }

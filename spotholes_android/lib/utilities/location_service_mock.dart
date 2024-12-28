@@ -16,7 +16,7 @@ class LocationServiceMock {
 
   // final List<Map<String, double>> _simulatedPoints;
 
-  // Lista de pontos para simulação (em torno de casa)
+  /// List of points for simulation (around home)
   List<Map<String, double>> simulatedPoints = [
     {"lat": -4.970759417, "lon": -39.018417578},
     {"lat": -4.970149456, "lon": -39.018437396},

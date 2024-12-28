@@ -57,7 +57,7 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
               _routeController.plotManeuverPolyline(stepIndex,
                   updateCamera: true);
             } else {
-              // Caso seja uma execução que não precise atualizar a câmera, volta para o estado padrão
+              /// If it is an execution that does not need to update the camera, return to the default state
               _isPageViewUpdateCamera.value = true;
               _routeController.plotManeuverPolyline(stepIndex,
                   updateCamera: false);
@@ -107,7 +107,7 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
             controller: _pageController,
             itemCount: _steps.value.length + 2,
             itemBuilder: (context, index) {
-              // Se step inicial, ponto de partida
+              /// If initial step, starting point
               if (index == 0) {
                 return Container(
                   decoration: BoxDecoration(
@@ -132,7 +132,7 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
                     ),
                   ),
                 );
-                // Caso seja o step do destino
+                /// If it is the destination step
               } else if (index == _steps.value.length + 1) {
                 return Watch(
                   (context) => Container(
@@ -159,7 +159,7 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
                     ),
                   ),
                 );
-                // Demais steps que contêm manobras, excluindo a origem e o destino
+                /// Other steps that contain maneuvers, excluding origin and destination
               } else if (index >= 1 && index <= _steps.value.length) {
                 final step = _steps.value[index - 1];
                 final maneuver = step.maneuver ?? 'straight';
@@ -210,7 +210,7 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
                     ),
                   ),
                 );
-                // TODO Testar: se fora do range retorna vazio, em vez de exceção.
+                // TODO Test: if out of range returns empty, instead of exception.
               } else {
                 return const SizedBox.shrink();
               }

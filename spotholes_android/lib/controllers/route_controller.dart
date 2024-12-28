@@ -45,24 +45,24 @@ class RouteController {
     _customInfoWindowControllerSignal,
   );
 
-  // Store all markers
+  /// Store all markers
   var _markersSignal = Signal<Map<String, Marker>>({});
   Signal<Map<String, Marker>> get markersSignal => _markersSignal;
 
-  // Store all spotholes in route
+  /// Store all spotholes in route
   var _spotholesInRouteList = Signal<List<Spothole>>([]);
   Signal<List<Spothole>> get spotholesInRouteList => _spotholesInRouteList;
 
-  // Store all polylines
+  /// Store all polylines
   var _polylinesSignal = Signal<Map<String, Polyline>>({});
   Signal<Map<String, Polyline>> get polylinesSignal => _polylinesSignal;
 
-  // Store all route polyline points
+  /// Store all route polyline points
   var _routePolylineCoordinatesSignal = Signal<List<LatLng>>([]);
   Signal<List<LatLng>> get routePolylineCoordinatesSignal =>
       _routePolylineCoordinatesSignal;
 
-  // Store a result from a request for a route on Google Directions API
+  /// Store a result from a request for a route on Google Directions API
   var _directionResult = Signal<DirectionsResult>(const DirectionsResult());
   Signal<DirectionsResult> get directionResult => _directionResult;
 
@@ -82,13 +82,13 @@ class RouteController {
   late final _endLocationLatLng =
       computed(() => geoCoordToLatLng(_endLocation.value!));
 
-  // This variable cannot be computed because it needs to be reactive as a List
+  /// This variable cannot be computed because it needs to be reactive as a List
   var _routeStepsLatLng = Signal<List<Step>>([]);
   Signal<List<Step>> get routeStepsLatLng => _routeStepsLatLng;
-  // This variable is just an independent copy of the routeStepsLatLng to mantain the original data
+  /// This variable is just an independent copy of the routeStepsLatLng to mantain the original data
   var _auxRouteStepsLatLng = Signal<List<Step>>([]);
 
-  // Store steps' start indexes inside a route polyline
+  /// Store steps' start indexes inside a route polyline
   var _stepsIndexes = <int>[];
   List<int> get stepsIndexes => _stepsIndexes;
 
@@ -252,7 +252,7 @@ class RouteController {
           _spotholeService.loadSpotholesInRoute(
               routePolylineCoordinatesSignal.value, _spotholesInRouteList);
         } else {
-          // do something with error response
+          // TODO do something with error response
         }
       },
     );
@@ -292,7 +292,7 @@ class RouteController {
     };
   }
 
-  // Update context and controllers related to the markers
+  /// Update context and controllers related to the markers
   void updateAllRouteMarkers() {
     listenCurrentLocation();
     loadRouteMarkers(_startLocationLatLng.value, _endLocationLatLng.value);
@@ -376,7 +376,7 @@ class RouteController {
   }
 
   void updateRoutePolyline() {
-    // Modifica a polyline da rota
+    /// Modifies the polyline of the route
     polylinesSignal.value['route'] = Polyline(
       polylineId: const PolylineId("route"),
       points: _routePolylineCoordinatesSignal.value,
@@ -385,7 +385,7 @@ class RouteController {
       geodesic: true,
       jointType: JointType.round,
     );
-    // Força o update das polylines da rota
+    /// Forces the update of the route polylines
     polylinesSignal.value = {...polylinesSignal.value};
   }
 
@@ -407,7 +407,7 @@ class RouteController {
       );
 
   void finishNavigationRoute() async {
-    // Clear essential route data
+    /// Clear essential route data
     _polylinesSignal.value.clear();
     _routePolylineCoordinatesSignal.value.clear();
     _routeStepsLatLng.value.clear();
@@ -419,13 +419,30 @@ class RouteController {
     // _showStepsPageSignal.value = false;
     // _pageViewTypeSignal.value = '';
     // _pageControllerSignal.value.dispose();
-    // Force update of steps
+    /// Force update of steps
     // _routeStepsLatLng.value = [..._routeStepsLatLng.value];
   }
 
+  /// Creates a copy of the current `RouteController` instance.
+  ///
+  /// The copied instance shares the reactive signal variables with the original instance.
+  /// This includes:
+  /// - `_markersSignal`: Signal for markers.
+  /// - `_spotholesInRouteList`: List of spotholes in the route.
+  /// - `_polylinesSignal`: Signal for polylines.
+  /// - `_routePolylineCoordinatesSignal`: Signal for route polyline coordinates.
+  /// - `_directionResult`: Result of the direction.
+  /// - `_routeStepsLatLng`: LatLng coordinates of the route steps.
+  /// - `_auxRouteStepsLatLng`: Auxiliary LatLng coordinates of the route steps.
+  /// - `_stepsIndexes`: Indexes of the steps.
+  ///
+  /// Note: Controllers and other variables that are initialized as null in the `RouteController`
+  /// are not copied to avoid duplication errors. Each page requires a unique controller per widget.
+  ///
+  /// Returns:
+  /// A new `RouteController` instance with shared reactive signal variables.
   RouteController getCopy() {
     var copy = RouteController();
-    // Share the signals variables that need to be reactives between the RouteController instances
     copy._markersSignal = _markersSignal;
     copy._spotholesInRouteList = _spotholesInRouteList;
     copy._polylinesSignal = _polylinesSignal;
@@ -434,8 +451,6 @@ class RouteController {
     copy._routeStepsLatLng = _routeStepsLatLng;
     copy._auxRouteStepsLatLng = _auxRouteStepsLatLng;
     copy._stepsIndexes = _stepsIndexes;
-    // Removi todos os casos de valores que são inicializados nulo no RouteController
-    // Principalmente controlladores, pois cada página precisa de um único por widget evitando erros por duplicidade.
     // copy._pageControllerSignal.value = PageController(initialPage: 1);
     // copy._googleMapController = null;
     // copy._customInfoWindowControllerSignal.value =

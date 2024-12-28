@@ -37,7 +37,7 @@ class NavigationController {
   }
 
   void onTrackLocation() {
-    // Alterna a ação entre rastrear e não rastrear
+    /// Alternates the action between tracking and not tracking
     if (isTrackingLocation.value) {
       isTrackingLocation.value = false;
     } else {
@@ -98,7 +98,7 @@ class NavigationController {
     _routeController.registerSpotholeModal(registerPosition);
   }
 
-  // TODO Limitar o número de requisições por minuto para evitar uso indevido, talvez um debaunce
+  // TODO Limit the number of requests per minute to avoid misuse, maybe a debounce
   void recalculateRoute() {
     _routeController.recalculateRoute(_locationService.currentLocationLatLng);
     _locationService.loadCurrentLocationMark(

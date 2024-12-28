@@ -56,7 +56,7 @@ class LocationService {
       distanceFilter: 5,
     );
     _currentLocationSignal.value = await _location.getLocation();
-    //TODO Implementar Snackbar alertando que o GPS está fora. Pode ser um signal que exibe o snackbar na tela com o ícone de GPS fora
+    // TODO Implement Snackbar alerting that GPS is off. It can be a signal that displays the snackbar on the screen with the GPS off icon
     _location.onLocationChanged.listen(
       (newLoc) {
         _currentLocationSignal.value = newLoc;

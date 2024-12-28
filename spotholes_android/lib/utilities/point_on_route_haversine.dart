@@ -4,9 +4,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/spothole.dart';
 
-// Function to calculate the Haversine distance between two points
+/// Function to calculate the Haversine distance between two points
 double haversine(LatLng point1, LatLng point2) {
-  const R = 6371000; // Earth radius in meters
+  /// Earth radius in meters
+  const R = 6371000;
   final phi1 = point1.latitude * pi / 180;
   final phi2 = point2.latitude * pi / 180;
   final deltaPhi = (point2.latitude - point1.latitude) * pi / 180;
@@ -19,7 +20,7 @@ double haversine(LatLng point1, LatLng point2) {
   return R * c;
 }
 
-// Function to calculate the distance from a point to a line segment
+/// Function to calculate the distance from a point to a line segment
 double pointToSegmentDistance(LatLng point, LatLng start, LatLng end) {
   final A = [
     point.latitude - start.latitude,
@@ -44,7 +45,7 @@ double pointToSegmentDistance(LatLng point, LatLng start, LatLng end) {
   return haversine(point, projection);
 }
 
-// Function to calculate the accumulated distance along the route
+/// Function to calculate the accumulated distance along the route
 List<double> calculateAccumulatedDistances(List<LatLng> route) {
   List<double> accumulatedDistances = [0.0];
   for (int i = 1; i < route.length; i++) {
@@ -54,7 +55,7 @@ List<double> calculateAccumulatedDistances(List<LatLng> route) {
   return accumulatedDistances;
 }
 
-// Function to find the nearest point on the route and the accumulated distance to it
+/// Function to find the nearest point on the route and the accumulated distance to it
 double findClosestPointDistance(
     LatLng point, List<LatLng> route, List<double> accumulatedDistances) {
   double minDistance = double.infinity;
@@ -71,7 +72,7 @@ double findClosestPointDistance(
   return closestDistance;
 }
 
-// Function to verify and store accumulated distances from the points in relation to the route
+/// Function to verify and store accumulated distances from the points in relation to the route
 List<Spothole> checkPointsAndStoreAccumulatedDistances(
     List<Spothole> points, List<LatLng> route,
     {double tolerance = 5.0}) {
@@ -103,7 +104,7 @@ List<Spothole> checkPointsAndStoreAccumulatedDistances(
   return pointsWithinTolerance;
 }
 
-// Function to check if a point is within tolerance with respect to a route
+/// Function to check if a point is within tolerance with respect to a route
 bool isPointNearRoute(LatLng point, List<LatLng> route,
     {double tolerance = 5.0}) {
   for (int i = 0; i < route.length - 1; i++) {
@@ -117,7 +118,7 @@ bool isPointNearRoute(LatLng point, List<LatLng> route,
   return false;
 }
 
-// Function to check a list of points
+/// Function to check a list of points
 List<bool> arePointsNearRoute(List<LatLng> points, List<LatLng> route,
     {double tolerance = 5.0}) {
   return points

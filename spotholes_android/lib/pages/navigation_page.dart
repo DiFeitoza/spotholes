@@ -53,7 +53,7 @@ class _NavigationPageState extends State<NavigationPage> {
   Widget build(BuildContext context) {
     return Watch(
       (context) => PopScope(
-        //TODO definir ação do popScope para gerar o alertDialog!
+        // TODO define PopScope action to generate the alertDialog!
         child: Scaffold(
           backgroundColor: context.isDarkMode ? Colors.black : Colors.white,
           body: SafeArea(

@@ -4,7 +4,7 @@ import 'package:get_it/get_it.dart';
 final getIt = GetIt.instance;
 
 void setupDependencies() {
-  // Setup Firebase
+  /// Setup Firebase
   getIt.registerLazySingleton<DatabaseReference>(() {
     return FirebaseDatabase.instance.ref();
   });

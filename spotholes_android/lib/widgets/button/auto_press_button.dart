@@ -21,7 +21,7 @@ class AutoPressButtonState extends State<AutoPressButton>
   late Animation _animation;
 
   pressButton() {
-    // Ther order of the next two lines is important
+    /// The order of the next two lines is important
     Navigator.pop(context);
     widget.onPressButton();
   }

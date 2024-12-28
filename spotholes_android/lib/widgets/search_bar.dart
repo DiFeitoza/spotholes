@@ -93,7 +93,7 @@ class CustomTextField extends StatelessWidget {
             TextPosition(offset: prediction.description!.length),
           );
         },
-        // if we want to make custom list item builder
+        /// if we want to make custom list item builder
         itemBuilder: (context, index, Prediction prediction) {
           return Container(
             padding: const EdgeInsets.all(10),
@@ -116,9 +116,9 @@ class CustomTextField extends StatelessWidget {
         },
         textInputAction: TextInputAction.search,
         focusNode: _searchBarfocusNode,
-        // if you want to add seperator between list items
+        /// if you want to add seperator between list items
         seperatedBuilder: const Divider(),
-        // want to show close icon
+        /// want to show close icon
         isCrossBtnShown: true,
         // place type
         // placeType: PlaceType.geocode,

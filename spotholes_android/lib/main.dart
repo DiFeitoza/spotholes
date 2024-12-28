@@ -28,7 +28,7 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // Cria uma chave global para o Navigator, permitindo a consulta do context global fora da árvore (solução para controllers)
+  /// Creates a global key for the Navigator, allowing the global context to be accessed outside the widget tree (solution for controllers).
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // Implements the AppNavigatorObserver to handle all route changes
+      /// Implements the AppNavigatorObserver to handle all route changes
       // navigatorObservers: [AppNavigatorObserver()],
       navigatorObservers: [routeObserver],
       navigatorKey: navigatorKey,
