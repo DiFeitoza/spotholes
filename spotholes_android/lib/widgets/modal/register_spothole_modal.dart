@@ -121,7 +121,7 @@ class RegisterSpotholeModalState extends State<RegisterSpotholeModal> {
           children: [
             if (widget.isCountdown)
               AutoPressButton(
-                onRegister: widget.onRegister,
+                onPressButton: widget.onRegister,
                 textOnRegisterButton: widget.textOnRegisterButton,
                 timerInSeconds: widget.timerInSeconds,
               )

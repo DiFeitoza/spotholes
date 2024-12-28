@@ -6,69 +6,90 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:signals/signals_flutter.dart';
 
-import '../models/spothole.dart';
 import '../package/custom_info_window.dart';
 import '../package/google_places_flutter/model/place_details.dart'
     hide Location;
 import '../services/geocoding_service.dart';
+import '../services/location_service.dart';
 import '../services/service_locator.dart';
+import '../services/spothole_service.dart';
 import '../utilities/constants.dart';
-import '../utilities/custom_icons.dart';
 import '../utilities/custom_snackbar.dart';
 import '../widgets/draggable_scrollable_sheet/draggable_scrollable_sheet_type.dart';
 import '../widgets/info_window/marker_info_window.dart';
-import '../widgets/modal/register_spothole_modal.dart';
-import 'spothole_info_window_controller.dart';
 
 class BaseMapController {
-  BaseMapController._();
-  static final BaseMapController _instance = BaseMapController._();
-  static BaseMapController get instance => _instance;
+  Function? _dispose;
+
+  final LocationService _locationService = LocationService.instance;
+
+  late final _currentLocationSignal = _locationService.currentLocationSignal;
+  Signal<LocationData?> get currentLocationSignal => _currentLocationSignal;
+
+  LatLng get currentLocationLatLng => LatLng(
+      _currentLocationSignal.value!.latitude!,
+      _currentLocationSignal.value!.longitude!);
 
   final databaseReference = getIt<DatabaseReference>();
   late final dataBaseSpotholesRef = databaseReference.child('spotholes');
 
-  GoogleMapController? _googleMapController;
-  final _googleMapControllerCompleter = Completer();
+  final _googleMapControllerCompleter = Completer<GoogleMapController>();
+  Future<GoogleMapController> get getGoogleMapController async =>
+      await _googleMapControllerCompleter.future;
+
   final _customInfoWindowControllerSignal =
       Signal<CustomInfoWindowController>(CustomInfoWindowController());
-  SpotholeInfoWindowController? spotholeInfoWindowController;
-  final _textEditingController = TextEditingController();
-  final _searchBarFocusNode = FocusNode();
-
-  late Signal draggableScrollableSheetSignal = signal(
-    DraggableScrollableSheetTypes.initial.widget,
-  );
-
-  final _geocodingService = GeocodingService.instance;
-
-  final _location = Location();
+  Signal<CustomInfoWindowController> get customInfoWindowControllerSignal =>
+      _customInfoWindowControllerSignal;
 
   final _markersSignal = Signal<Map<String, Marker>>({});
-  final _currentLocationSignal = Signal<LocationData?>(null);
+  Signal<Map<String, Marker>> get markersSignal => _markersSignal;
 
-  get markersSignal => _markersSignal;
-  get currentLocationSignal => _currentLocationSignal;
-  get textEditingController => _textEditingController;
-  get searchBarFocusNode => _searchBarFocusNode;
-  get customInfoWindowControllerSignal => _customInfoWindowControllerSignal;
-  get currentLocationLatLng => LatLng(_currentLocationSignal.value!.latitude!,
-      _currentLocationSignal.value!.longitude!);
+  late final _spotholeService = SpotholeService(
+    _markersSignal,
+    _customInfoWindowControllerSignal,
+  );
 
-  String currentLocationLatLngURLPattern() =>
-      "${_currentLocationSignal.value!.latitude!.toString()}"
-      "%2C${_currentLocationSignal.value!.longitude!.toString()}";
+  final _textEditingController = TextEditingController();
+  TextEditingController get textEditingController => _textEditingController;
 
-  void onMapCreated(mapController, context) {
-    _googleMapControllerCompleter.complete(mapController);
+  final _searchBarFocusNode = FocusNode();
+  FocusNode get searchBarFocusNode => _searchBarFocusNode;
+
+  late final _draggableScrollableSheetTypes =
+      DraggableScrollableSheetTypes(baseMapController: this);
+
+  late final _draggableScrollableSheetSignal = signal(
+    _draggableScrollableSheetTypes.initial.widget,
+  );
+  Signal<Widget> get draggableScrollableSheetSignal =>
+      _draggableScrollableSheetSignal;
+
+  final _geocodingService = GeocodingService.instance;
+  final isTrackingLocation = signal(true);
+  final isProgrammaticMove = signal(true);
+
+  void onMapCreated(mapController) {
     _customInfoWindowControllerSignal.value.googleMapController = mapController;
-    spotholeInfoWindowController = SpotholeInfoWindowController(
-        _customInfoWindowControllerSignal, _markersSignal);
-    loadSpotholeMarkers(context);
+    _googleMapControllerCompleter.complete(mapController);
+    listenCurrentLocation();
+    _spotholeService.loadSpotholeMarkers();
   }
 
-  void updateCameraGoogleMapsController(position, [zoom = defaultZoomMap]) {
-    _googleMapController!.animateCamera(
+  void trackLocation() {
+    if (isTrackingLocation.value) {
+      isTrackingLocation.value = false;
+    } else {
+      isTrackingLocation.value = true;
+      centerView();
+    }
+  }
+
+  void updateCameraGoogleMapsController(position,
+      [zoom = defaultZoomMap]) async {
+    final mapController = await getGoogleMapController;
+    isProgrammaticMove.value = true;
+    mapController.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           zoom: zoom,
@@ -82,28 +103,22 @@ class BaseMapController {
     updateCameraGoogleMapsController(currentLocationLatLng);
   }
 
-  void loadCurrentLocation() async {
-    _currentLocationSignal.value = await _location.getLocation();
-    loadCurrentLocationMark();
-    _location.onLocationChanged.listen((newLoc) {
-      _currentLocationSignal.value = newLoc;
-      loadCurrentLocationMark();
-    });
-    _googleMapController = await _googleMapControllerCompleter.future;
-    centerView();
-  }
-
-  void loadCurrentLocationMark() {
-    final newMarker = Marker(
-      markerId: const MarkerId("currentLocation"),
-      icon: CustomIcons.currentLocationIcon,
-      position: currentLocationLatLng,
-      onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
-          const MarkerInfoWindow(
-              title: 'Localização', textContent: 'Você está aqui!'),
-          currentLocationLatLng),
+  void listenCurrentLocation() async {
+    _dispose = effect(
+      () {
+        if (_currentLocationSignal.value != null) {
+          untracked(
+            () => _locationService.loadCurrentLocationMark(
+              _markersSignal,
+              _customInfoWindowControllerSignal,
+            ),
+          );
+        }
+        if (isTrackingLocation.value) {
+          centerView();
+        }
+      },
     );
-    _markersSignal.value['currentLocationMarker'] = newMarker;
   }
 
   changeDraggableSheet(DraggableScrollableSheetType type) {
@@ -113,7 +128,8 @@ class BaseMapController {
   void closeDraggableSheet(String key) {
     _customInfoWindowControllerSignal.value.hideInfoWindow!();
     removeMarkerByKey(key);
-    changeDraggableSheet(DraggableScrollableSheetTypes.initial);
+    changeDraggableSheet(_draggableScrollableSheetTypes.initial);
+    isTrackingLocation.value = true;
     centerView();
   }
 
@@ -125,61 +141,33 @@ class BaseMapController {
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
       position: position,
       onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
-          MarkerInfoWindow(
-              title: 'Resultado da Busca',
-              textContent: placeDetails.result!.name ??
-                  'Latitude: ${placeLocation.lat!}\rLongitude: ${placeLocation.lng!}'),
-          position),
+        MarkerInfoWindow(
+          title: 'Resultado da Busca',
+          textContent: placeDetails.result!.name ??
+              'Latitude: ${placeLocation.lat!}\rLongitude: ${placeLocation.lng!}',
+        ),
+        position,
+      ),
     );
     updateCameraGoogleMapsController(position);
     changeDraggableSheet(DraggableScrollableSheetTypes.place(
-        placeDetails: placeDetails, position: position));
+      placeDetails: placeDetails,
+      position: position,
+      baseMapController: this,
+    ));
   }
 
   void removeMarkerByKey(key) {
     markersSignal.value.remove(key);
   }
 
-  void loadSpotholeMarkers(context) {
-    databaseReference.child('spotholes').once().then(
-      (DatabaseEvent event) {
-        final spotholesMap = event.snapshot.value as Map?;
-        if (spotholesMap != null) {
-          spotholesMap.forEach(
-            (key, value) {
-              final spothole =
-                  Spothole.fromJson(Map<String, dynamic>.from(value as Map));
-              spothole.id = key;
-              spotholeInfoWindowController!
-                  .addSpotholeMarker(context, spothole);
-            },
-          );
-        }
-      },
-    );
+  void loadSpotholeMarkers() {
+    _spotholeService.loadSpotholeMarkers();
   }
 
-  void registerSpothole(context, position, category, type) {
-    final newSpotHoleRef = dataBaseSpotholesRef.push();
-    final newSpothole = Spothole(DateTime.now().toUtc(), DateTime.now().toUtc(),
-        position, category, type, null, newSpotHoleRef.key);
-    newSpotHoleRef.set(newSpothole.toJson());
-    spotholeInfoWindowController!.addSpotholeMarker(context, newSpothole);
-  }
-
-  void registerSpotholeModal(context, {LatLng? position}) {
-    final latLng = position ?? currentLocationLatLng;
-    showModalBottomSheet(
-      context: context,
-      builder: (builder) {
-        return RegisterSpotholeModal(
-          title: "Para alertar um risco, selecione:",
-          textOnRegisterButton: "Adicionar",
-          onRegister: (riskCategory, type) =>
-              registerSpothole(context, latLng, riskCategory, type),
-        );
-      },
-    );
+  void registerSpotholeModal([LatLng? position]) {
+    final registerPosition = position ?? currentLocationLatLng;
+    _spotholeService.registerSpotholeModal(registerPosition);
   }
 
   void onLongPress(BuildContext context, LatLng position) async {
@@ -196,9 +184,10 @@ class BaseMapController {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) {
           CustomSnackbar.show(
-              context: context,
-              message:
-                  'Não foi possível carregar informações, verifique a conexão com a internet');
+            context: context,
+            message:
+                'Não foi possível carregar informações, verifique a conexão com a internet',
+          );
         },
       );
     }
@@ -206,18 +195,23 @@ class BaseMapController {
       markerId: MarkerId(position.toString()),
       position: position,
       onTap: () => _customInfoWindowControllerSignal.value.addInfoWindow!(
-          MarkerInfoWindow(
-            title: 'Local Aproximado',
-            textContent: windowInfo,
-          ),
-          position),
+        MarkerInfoWindow(
+          title: 'Local Aproximado',
+          textContent: windowInfo,
+        ),
+        position,
+      ),
     );
     changeDraggableSheet(
       DraggableScrollableSheetTypes.location(
         position: position,
         formattedPlacemark: formattedPlacemark,
-        onRegister: () => registerSpotholeModal(context, position: position),
+        baseMapController: this,
       ),
     );
+  }
+
+  dispose() {
+    _dispose!();
   }
 }

@@ -4,7 +4,9 @@ import 'package:signals/signals_flutter.dart';
 import 'package:spotholes_android/widgets/spotholes_page_view.dart';
 
 import '../controllers/route_controller.dart';
+import '../main.dart';
 import '../package/custom_info_window.dart';
+import '../utilities/app_routes.dart';
 import '../utilities/constants.dart';
 import '../utilities/dark_mode_context_extension.dart';
 import '../widgets/button/custom_button.dart';
@@ -25,35 +27,33 @@ class RoutePage extends StatefulWidget {
   State<RoutePage> createState() => _RoutePageState();
 }
 
-class _RoutePageState extends State<RoutePage> {
-  final _routeController = RouteController.instance;
+class _RoutePageState extends State<RoutePage> with RouteAware {
+  final _routeController = RouteController();
   late final _markers = _routeController.markersSignal;
-
-  late final _directionResult = _routeController.directionResult;
-  late final _route = _directionResult.value.routes![0];
-  late final _leg = _route.legs![0];
+  late final _route = _routeController.route;
+  late final _leg = _routeController.leg;
 
   late final _customInfoWindowControllerSignal =
       _routeController.customInfoWindowControllerSignal;
 
-  bool _isLoading = true;
-
+  late final _pageControllerSignal = _routeController.pageControllerSignal;
   late final _pageViewTypeSignal = _routeController.pageViewTypeSignal;
-
   late final _showStepsPageSignal = _routeController.showStepsPageSignal;
-  late final Signal<PageController> _pageControllerSignal =
-      _routeController.pageControllerSignal;
+  bool _isLoading = true;
 
   void _toggleWidgets() {
     _showStepsPageSignal.value = !_showStepsPageSignal.value;
   }
 
-  List<Widget> _horizontalListButtons(BuildContext context, position) {
+  List<Widget> _horizontalListButtons() {
     return [
       CustomButton(
         label: 'Iniciar viagem',
         bgColor: Colors.tealAccent.shade400,
-        onPressed: () => {},
+        onPressed: () => MyApp.navigatorKey.currentState?.pushNamed(
+          AppRoutes.navigation,
+          arguments: [_routeController.getCopy()],
+        ),
       ),
       CustomButton(
         label: 'Centralizar',
@@ -68,7 +68,7 @@ class _RoutePageState extends State<RoutePage> {
 
   Future<void> _loadRoute() async {
     await _routeController.loadRouteWithLegsAndSteps(
-        widget.sourceLocation, widget.destinationLocation, context);
+        widget.sourceLocation, widget.destinationLocation);
     setState(() {
       _isLoading = false;
     });
@@ -81,8 +81,23 @@ class _RoutePageState extends State<RoutePage> {
   }
 
   @override
+  void didPopNext() {
+    _routeController.centerViewRoute();
+    /// Avoid exception when the user returns from the navigation page and try access the info window
+    _customInfoWindowControllerSignal.value.hideInfoWindow!();
+    /// Update markers when the user returns from the navigation page changing the customInfoWindowController with the new mapController
+    _routeController.updateAllRouteMarkers();
+  }
+
+  @override
+  void didChangeDependencies() {
+    MyApp.routeObserver.subscribe(this, ModalRoute.of(context) as PageRoute);
+    super.didChangeDependencies();
+  }
+
+  @override
   void dispose() {
-    RouteController.resetInstance();
+    MyApp.routeObserver.unsubscribe(this);
     super.dispose();
   }
 
@@ -111,7 +126,7 @@ class _RoutePageState extends State<RoutePage> {
                   centerTitle: true,
                   title: !_showStepsPageSignal.value
                       ? Text(
-                          "Seu local ➞ Destino",
+                          "Rota",
                           style: Theme.of(context).textTheme.titleLarge,
                         )
                       : Text(
@@ -130,31 +145,40 @@ class _RoutePageState extends State<RoutePage> {
                           color: Theme.of(context).focusColor,
                           child: Column(
                             children: [
-                              Text(
-                                'Via: ${_route.summary!}',
-                                style: Theme.of(context).textTheme.bodyLarge,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                '${_leg.distance!.text} (${_leg.duration!.text})',
-                                style: Theme.of(context).textTheme.titleLarge,
-                                textAlign: TextAlign.center,
-                              ),
+                              if (_route.value.summary!.isNotEmpty)
+                                Text(
+                                  'Via: ${_route.value.summary!}',
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.two_wheeler),
+                                  const SizedBox(width: 8.0),
+                                  Text(
+                                    '${_leg.value.distance!.text} (${_leg.value.duration!.text})',
+                                    style:
+                                        Theme.of(context).textTheme.titleLarge,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              )
                             ],
                           ),
                         ),
                         if (_showStepsPageSignal.value &&
                             _pageViewTypeSignal.value == 'route')
                           RouteStepsPageView(
-                            pageController: _pageControllerSignal.value,
-                            route: _route,
+                            routeController: _routeController,
                           ),
                         if (_showStepsPageSignal.value &&
                             _pageViewTypeSignal.value == 'spothole')
                           SpotholesPageView(
-                              pageController: _pageControllerSignal.value),
+                            routeController: _routeController,
+                          ),
                         Expanded(
                           child: Stack(
                             children: [
@@ -202,9 +226,7 @@ class _RoutePageState extends State<RoutePage> {
                                 visible: !_showStepsPageSignal.value,
                                 maintainState: true,
                                 child: RouteDraggableSheet(
-                                  controller: RouteDraggableSheetController(),
-                                  destinationLocation:
-                                      widget.destinationLocation,
+                                  routeController: _routeController,
                                 ),
                               ),
                               if (_showStepsPageSignal.value)
@@ -269,10 +291,7 @@ class _RoutePageState extends State<RoutePage> {
                               height: 60.0,
                               child: ListView(
                                 scrollDirection: Axis.horizontal,
-                                children: _horizontalListButtons(
-                                  context,
-                                  widget.destinationLocation,
-                                ),
+                                children: _horizontalListButtons(),
                               ),
                             ),
                           ),

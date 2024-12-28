@@ -28,9 +28,20 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  /// Creates a global key for the Navigator, allowing the global context to be accessed outside the widget tree (solution for controllers).
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
+  static final RouteObserver<PageRoute> routeObserver =
+      RouteObserver<PageRoute>();
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      /// Implements the AppNavigatorObserver to handle all route changes
+      // navigatorObservers: [AppNavigatorObserver()],
+      navigatorObservers: [routeObserver],
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Spotholes',
       theme: ThemeData(

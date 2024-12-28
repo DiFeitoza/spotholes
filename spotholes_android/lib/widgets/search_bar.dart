@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:spotholes_android/controllers/base_map_controller.dart';
 
 import '../config/environment_config.dart';
+import '../controllers/base_map_controller.dart';
 import '../package/google_places_flutter/google_places_flutter.dart';
 import '../package/google_places_flutter/model/place_details.dart';
 import '../package/google_places_flutter/model/prediction.dart';
+import '../services/location_service.dart';
 
 class CustomHeader extends StatelessWidget {
-  const CustomHeader({super.key});
+  final BaseMapController baseMapController;
+  const CustomHeader({super.key, required this.baseMapController});
+
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       children: <Widget>[
-        CustomSearchContainer(),
+        CustomSearchContainer(
+          baseMapController: baseMapController,
+        ),
         // CustomSearchCategories(),
       ],
     );
@@ -20,7 +25,8 @@ class CustomHeader extends StatelessWidget {
 }
 
 class CustomSearchContainer extends StatelessWidget {
-  const CustomSearchContainer({super.key});
+  final BaseMapController baseMapController;
+  const CustomSearchContainer({super.key, required this.baseMapController});
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +41,9 @@ class CustomSearchContainer extends StatelessWidget {
         ),
         child: Row(
           children: <Widget>[
-            CustomTextField(),
+            CustomTextField(
+              baseMapController: baseMapController,
+            ),
             // const Icon(Icons.mic),
             // const SizedBox(width: 16),
             // const CustomUserAvatar(),
@@ -48,10 +56,12 @@ class CustomSearchContainer extends StatelessWidget {
 }
 
 class CustomTextField extends StatelessWidget {
-  CustomTextField({super.key});
-  final _baseMapController = BaseMapController.instance;
-  late final _textEditingController = _baseMapController.textEditingController;
-  late final searchBarfocusNode = _baseMapController.searchBarFocusNode;
+  final BaseMapController baseMapController;
+  final _locationService = LocationService.instance;
+  late final _textEditingController = baseMapController.textEditingController;
+  late final _searchBarfocusNode = baseMapController.searchBarFocusNode;
+
+  CustomTextField({super.key, required this.baseMapController});
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +70,7 @@ class CustomTextField extends StatelessWidget {
         textEditingController: _textEditingController,
         googleAPIKey: EnvironmentConfig.googleApiKey!,
         currentLocationLatLngURLPattern:
-            _baseMapController.currentLocationLatLngURLPattern,
+            _locationService.currentLocationLatLngURLPattern,
         boxDecoration: const BoxDecoration(),
         inputDecoration: const InputDecoration(
           prefixIcon: Padding(
@@ -75,7 +85,7 @@ class CustomTextField extends StatelessWidget {
         countries: const ["br"],
         isLatLngRequired: true,
         getPlaceDetailWithLatLng: (PlaceDetails placeDetails) {
-          _baseMapController.loadPlaceLocation(context, placeDetails);
+          baseMapController.loadPlaceLocation(context, placeDetails);
         }, // this callback is called when isLatLngRequired is true
         itemClick: (Prediction prediction) {
           _textEditingController.text = prediction.description!;
@@ -83,7 +93,7 @@ class CustomTextField extends StatelessWidget {
             TextPosition(offset: prediction.description!.length),
           );
         },
-        // if we want to make custom list item builder
+        /// if we want to make custom list item builder
         itemBuilder: (context, index, Prediction prediction) {
           return Container(
             padding: const EdgeInsets.all(10),
@@ -105,10 +115,10 @@ class CustomTextField extends StatelessWidget {
           );
         },
         textInputAction: TextInputAction.search,
-        focusNode: searchBarfocusNode,
-        // if you want to add seperator between list items
+        focusNode: _searchBarfocusNode,
+        /// if you want to add seperator between list items
         seperatedBuilder: const Divider(),
-        // want to show close icon
+        /// want to show close icon
         isCrossBtnShown: true,
         // place type
         // placeType: PlaceType.geocode,

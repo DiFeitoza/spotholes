@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:spotholes_android/package/google_places_flutter/model/place_details.dart';
-import 'package:spotholes_android/utilities/app_routes.dart';
 
 import '../../controllers/base_map_controller.dart';
+import '../../main.dart';
+import '../../package/google_places_flutter/model/place_details.dart';
+import '../../utilities/app_routes.dart';
 import '../button/custom_button.dart';
 
 class PlaceDraggableSheetController {
@@ -15,15 +16,17 @@ class PlaceDraggableSheetController {
 }
 
 class PlaceDraggableSheet extends StatefulWidget {
-  const PlaceDraggableSheet(
-      {super.key,
-      required this.controller,
-      required this.position,
-      required this.placeDetails});
-
-  final PlaceDraggableSheetController controller;
   final LatLng position;
   final PlaceDetails placeDetails;
+
+  final BaseMapController baseMapController;
+
+  const PlaceDraggableSheet({
+    super.key,
+    required this.position,
+    required this.placeDetails,
+    required this.baseMapController,
+  });
 
   @override
   PlaceDraggableSheetState createState() => PlaceDraggableSheetState();
@@ -31,39 +34,39 @@ class PlaceDraggableSheet extends StatefulWidget {
 
 class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
   final ScrollController scrollController = ScrollController();
-  final _baseMapController = BaseMapController.instance;
+  late final baseMapController = widget.baseMapController;
+
   late final _canvasColor = Theme.of(context).canvasColor;
 
   _loadRoute(position) {
-    Navigator.of(context).pushNamed(
+    MyApp.navigatorKey.currentState?.pushNamed(
       AppRoutes.route,
-      arguments: [_baseMapController.currentLocationLatLng, position],
+      arguments: [baseMapController.currentLocationLatLng, position],
     );
   }
 
-  List<Widget> _horizontalListButtons(BuildContext context, position) {
+  List<Widget> _horizontalListButtons() {
     return [
       CustomButton(
         label: 'Rota',
         bgColor: Colors.tealAccent.shade400,
-        onPressed: () => _loadRoute(position),
+        onPressed: () => _loadRoute(widget.position),
       ),
       CustomButton(
         label: 'Alertar',
-        onPressed: () => _baseMapController.registerSpotholeModal(context,
-            position: position),
+        onPressed: () =>
+            baseMapController.registerSpotholeModal(widget.position),
       ),
     ];
   }
 
   void closeDraggable() {
-    _baseMapController.closeDraggableSheet('selectedPlace');
+    baseMapController.closeDraggableSheet('selectedPlace');
   }
 
   @override
   Widget build(BuildContext context) {
     Result placeDetailsResult = widget.placeDetails.result!;
-
     return DraggableScrollableSheet(
       maxChildSize: 0.6,
       minChildSize: 0.26,
@@ -144,8 +147,7 @@ class PlaceDraggableSheetState extends State<PlaceDraggableSheet> {
                             height: 60.0,
                             child: ListView(
                               scrollDirection: Axis.horizontal,
-                              children: _horizontalListButtons(
-                                  context, widget.position),
+                              children: _horizontalListButtons(),
                             ),
                           )
                         ],

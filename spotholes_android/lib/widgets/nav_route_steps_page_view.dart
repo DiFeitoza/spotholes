@@ -9,28 +9,30 @@ import '../controllers/route_controller.dart';
 import '../utilities/custom_icons.dart';
 import '../utilities/maneuver_icons.dart';
 
-class RouteStepsPageView extends StatefulWidget {
+class NavRouteStepsPageView extends StatefulWidget {
   final RouteController routeController;
+  final PageController pageController;
+  final Signal<bool> isPageViewUpdateCamera;
 
-  const RouteStepsPageView({
+  const NavRouteStepsPageView({
     super.key,
     required this.routeController,
+    required this.pageController,
+    required this.isPageViewUpdateCamera,
   });
 
   @override
-  RouteStepsStatePageView createState() => RouteStepsStatePageView();
+  NavRouteStepsStatePageView createState() => NavRouteStepsStatePageView();
 }
 
-class RouteStepsStatePageView extends State<RouteStepsPageView> {
+class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
   late final _routeController = widget.routeController;
-  late final _leg = _routeController.leg;
-  late final _startLocation = _routeController.startLocation;
-  late final _endLocation = _routeController.endLocation;
-  late final _steps = _routeController.routeStepsLatLng;
-  late final _polylinesSignal = _routeController.polylinesSignal;
-
-  late final _pageController = _routeController.pageControllerSignal.value;
+  late final _pageController = widget.pageController;
+  late final _isPageViewUpdateCamera = widget.isPageViewUpdateCamera;
   int _currentPage = 0;
+
+  late final _leg = _routeController.leg;
+  late final _steps = _routeController.routeStepsLatLng;
 
   @override
   void initState() {
@@ -38,44 +40,32 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _animateOnce();
     });
+
     _pageController.addListener(
       () {
         int newPage = _pageController.page!.round();
         if (newPage != _currentPage) {
           _currentPage = newPage;
-          _cleanPolylines();
+          _routeController.clearManeuverPolyline();
           if (_currentPage == 0) {
-            _routeController.updateCameraGeoCoord(_startLocation.value!);
+            _routeController.updateCameraGeoCoord(_leg.value.startLocation!);
           } else if (_currentPage == _steps.value.length + 1) {
-            _routeController.updateCameraGeoCoord(_endLocation.value!);
+            _routeController.updateCameraGeoCoord(_leg.value.endLocation!);
           } else {
             final stepIndex = _currentPage - 1;
-            _routeController.plotManeuverPolyline(stepIndex);
+            if (_isPageViewUpdateCamera.value) {
+              _routeController.plotManeuverPolyline(stepIndex,
+                  updateCamera: true);
+            } else {
+              /// If it is an execution that does not need to update the camera, return to the default state
+              _isPageViewUpdateCamera.value = true;
+              _routeController.plotManeuverPolyline(stepIndex,
+                  updateCamera: false);
+            }
           }
         }
       },
     );
-  }
-
-  void _cleanPolylines() {
-    _polylinesSignal.value.remove('maneuverArrow');
-    _polylinesSignal.value.remove('straightPath');
-    _polylinesSignal.value = {..._polylinesSignal.value};
-  }
-
-  void _initialStepCamera() {
-    final initialPage = _pageController.initialPage;
-    if (initialPage == 0) {
-      _routeController.updateCameraGeoCoord(_startLocation.value!);
-    } else if (initialPage == _steps.value.length + 1) {
-      _routeController.updateCameraGeoCoord(_endLocation.value!);
-    } else {
-      final step = _steps.value[initialPage - 1];
-      final maneuver = step.maneuver ?? 'straight';
-      maneuver == 'straight'
-          ? _routeController.newCameraLatLngBoundsFromStep(step)
-          : _routeController.updateCameraGeoCoord(step.startLocation!);
-    }
   }
 
   void _animateOnce() {
@@ -104,8 +94,7 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
 
   @override
   void dispose() {
-    _cleanPolylines();
-    _initialStepCamera();
+    _routeController.clearManeuverPolyline();
     super.dispose();
   }
 
@@ -118,6 +107,7 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
             controller: _pageController,
             itemCount: _steps.value.length + 2,
             itemBuilder: (context, index) {
+              /// If initial step, starting point
               if (index == 0) {
                 return Container(
                   decoration: BoxDecoration(
@@ -137,36 +127,40 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
                       ),
                       onTap: () => {
                         _routeController
-                            .updateCameraGeoCoord(_startLocation.value!),
+                            .updateCameraGeoCoord(_leg.value.startLocation!),
                       },
                     ),
                   ),
                 );
+                /// If it is the destination step
               } else if (index == _steps.value.length + 1) {
-                return Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(width: 0.5),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: ListTile(
-                      onTap: () => {
-                        _routeController
-                            .updateCameraGeoCoord(_endLocation.value!),
-                      },
-                      title: Text(
-                        'Destino: ${_leg.value.endAddress!}',
-                      ),
-                      leading: SizedBox(
-                        height: 35,
-                        width: 35,
-                        child: CustomIcons.destinationIconAsset,
+                return Watch(
+                  (context) => Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(width: 0.5),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: ListTile(
+                        onTap: () => {
+                          _routeController
+                              .updateCameraGeoCoord(_leg.value.endLocation!),
+                        },
+                        title: Text(
+                          'Destino: ${_leg.value.endAddress!}',
+                        ),
+                        leading: SizedBox(
+                          height: 35,
+                          width: 35,
+                          child: CustomIcons.destinationIconAsset,
+                        ),
                       ),
                     ),
                   ),
                 );
-              } else {
+                /// Other steps that contain maneuvers, excluding origin and destination
+              } else if (index >= 1 && index <= _steps.value.length) {
                 final step = _steps.value[index - 1];
                 final maneuver = step.maneuver ?? 'straight';
                 final icon = maneuverIcons[maneuver] ?? Icons.directions;
@@ -216,6 +210,9 @@ class RouteStepsStatePageView extends State<RouteStepsPageView> {
                     ),
                   ),
                 );
+                // TODO Test: if out of range returns empty, instead of exception.
+              } else {
+                return const SizedBox.shrink();
               }
             },
           ),

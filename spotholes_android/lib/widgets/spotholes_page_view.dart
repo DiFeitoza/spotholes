@@ -7,25 +7,23 @@ import '../controllers/route_controller.dart';
 import '../models/spothole.dart';
 
 class SpotholesPageView extends StatefulWidget {
+  final RouteController routeController;
+
   const SpotholesPageView({
     super.key,
-    required this.pageController,
+    required this.routeController,
   });
-
-  final PageController pageController;
 
   @override
   SpotholesStatePageView createState() => SpotholesStatePageView();
 }
 
 class SpotholesStatePageView extends State<SpotholesPageView> {
-  late final PageController _pageController = widget.pageController;
-  int _currentPage = 0;
-
-  final _routeController = RouteController.instance;
-
+  late final _routeController = widget.routeController;
   late final _spotholesInRouteList =
       _routeController.spotholesInRouteList.value;
+  late final _pageController = _routeController.pageControllerSignal.value;
+  int _currentPage = 0;
 
   @override
   void initState() {

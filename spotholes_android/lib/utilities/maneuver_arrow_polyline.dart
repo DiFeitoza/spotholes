@@ -2,7 +2,8 @@ import 'dart:math';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 double haversineDistance(LatLng point1, LatLng point2) {
-  const double earthRadius = 6371000; // Earth's radius in meters
+  /// Earth's radius in meters
+  const double earthRadius = 6371000;
   double dLat = (point2.latitude - point1.latitude) * pi / 180;
   double dLng = (point2.longitude - point1.longitude) * pi / 180;
 
@@ -45,16 +46,16 @@ int findAndInsertMidpoint(List<LatLng> points) {
       double fraction = remainingDistance / segmentDistance;
       LatLng midpoint = interpolate(points[i], points[i + 1], fraction);
 
-      // Insert midpoint into list
+      /// Insert midpoint into list
       points.insert(i + 1, midpoint);
-
-      // Return the midpoint index
+      ///Return the midpoint index
       return i + 1;
     }
     accumulatedDistance += segmentDistance;
   }
 
-  return points.length - 1; // If the accumulated distance is exactly half
+  /// If the accumulated distance is exactly half
+  return points.length - 1;
 }
 
 List<LatLng> getSegmentAroundMidpoint(
@@ -78,7 +79,7 @@ List<LatLng> getSegmentAroundMidpoint(
 
   List<LatLng> segment = [];
 
-  // If the accumulated distance is exactly half
+  /// If the accumulated distance is exactly half
   double remainingDistanceBefore = distanceBefore;
   for (int i = midpointIndex; i > 0; i--) {
     double segmentDistance = haversineDistance(points[i], points[i - 1]);
@@ -92,10 +93,10 @@ List<LatLng> getSegmentAroundMidpoint(
     }
   }
 
-  // Add the midpoint
+  /// Add the midpoint
   segment.add(midpoint);
 
-  // Calculate points after midpoint
+  /// Calculate points after midpoint
   double remainingDistanceAfter = distanceAfter;
   for (int i = midpointIndex + 1; i < points.length; i++) {
     double segmentDistance = haversineDistance(points[i - 1], points[i]);

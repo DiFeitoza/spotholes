@@ -9,3 +9,6 @@
 
 # Environment
 .env
+
+# Project related
+pubspec.lock

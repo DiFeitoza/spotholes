@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../models/spothole.dart';
-
 class AutoPressButton extends StatefulWidget {
   final String textOnRegisterButton;
   final int timerInSeconds;
-  final Function onRegister;
+  final Function onPressButton;
 
   const AutoPressButton(
       {super.key,
       required this.textOnRegisterButton,
-      required this.onRegister,
+      required this.onPressButton,
       this.timerInSeconds = 10});
 
   @override
@@ -22,9 +20,10 @@ class AutoPressButtonState extends State<AutoPressButton>
   late AnimationController _animationController;
   late Animation _animation;
 
-  autoRegisterSpothole() {
-    widget.onRegister(Category.unitary, Type.pothole);
+  pressButton() {
+    /// The order of the next two lines is important
     Navigator.pop(context);
+    widget.onPressButton();
   }
 
   @override
@@ -40,7 +39,7 @@ class AutoPressButtonState extends State<AutoPressButton>
       );
     _animationController.addStatusListener((AnimationStatus status) {
       if (status == AnimationStatus.completed) {
-        autoRegisterSpothole();
+        pressButton();
       }
     });
     _animationController.forward();
@@ -70,7 +69,7 @@ class AutoPressButtonState extends State<AutoPressButton>
           ),
           GestureDetector(
             onTap: () {
-              autoRegisterSpothole();
+              pressButton();
             },
             child: Container(
               width: 100,

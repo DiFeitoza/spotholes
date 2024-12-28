@@ -16,16 +16,18 @@ class BaseMapPage extends StatefulWidget {
 }
 
 class BaseMapPageState extends State<BaseMapPage> {
-  final _baseMapController = BaseMapController.instance;
+  final _baseMapController = BaseMapController();
   late final _customInfoWindowControllerSignal =
       _baseMapController.customInfoWindowControllerSignal;
   late final _markersSignal = _baseMapController.markersSignal;
   late final _currentLocationSignal = _baseMapController.currentLocationSignal;
   late final _draggableScrollableSheetSignal =
       _baseMapController.draggableScrollableSheetSignal;
+  late final _isProgrammaticMove = _baseMapController.isProgrammaticMove;
+  late final _isTrackingLocation = _baseMapController.isTrackingLocation;
 
   void _onMapCreated(mapController) {
-    _baseMapController.onMapCreated(mapController, context);
+    _baseMapController.onMapCreated(mapController);
   }
 
   void _onLongPress(LatLng position) {
@@ -33,9 +35,9 @@ class BaseMapPageState extends State<BaseMapPage> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _baseMapController.loadCurrentLocation();
+  void dispose() {
+    _baseMapController.dispose();
+    super.dispose();
   }
 
   @override
@@ -68,15 +70,27 @@ class BaseMapPageState extends State<BaseMapPage> {
                         zoomControlsEnabled: false,
                         onTap: (position) => _customInfoWindowControllerSignal
                             .value.hideInfoWindow!(),
-                        onCameraMove: (position) =>
-                            _customInfoWindowControllerSignal
-                                .value.onCameraMove!(),
+                        onCameraMove: (position) {
+                          _customInfoWindowControllerSignal
+                              .value.onCameraMove!();
+                        },
+                        onCameraMoveStarted: () {
+                          if (!_isProgrammaticMove.value) {
+                            _isTrackingLocation.value = false;
+                          } else {
+                            _isProgrammaticMove.value = false;
+                          }
+                        },
                       ),
                       CustomInfoWindow(
                         controller: _customInfoWindowControllerSignal.value,
                       ),
-                      CustomFloatingActionButtonList(),
-                      const CustomHeader(),
+                      CustomFloatingActionButtonList(
+                        baseMapController: _baseMapController,
+                      ),
+                      CustomHeader(
+                        baseMapController: _baseMapController,
+                      ),
                       _draggableScrollableSheetSignal.value,
                     ],
                   ),

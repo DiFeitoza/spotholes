@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 import 'package:spotholes_android/controllers/route_controller.dart';
 import 'package:spotholes_android/widgets/bullet_list.dart';
 
+import '../../main.dart';
 import '../../models/spothole.dart';
+import '../../utilities/app_routes.dart';
 import '../../utilities/custom_icons.dart';
 import '../../utilities/maneuver_icons.dart';
 import '../button/custom_button.dart';
@@ -19,21 +20,19 @@ class RouteDraggableSheetController {
 }
 
 class RouteDraggableSheet extends StatefulWidget {
+  final RouteController routeController;
+
   const RouteDraggableSheet({
     super.key,
-    required this.controller,
-    required this.destinationLocation,
+    required this.routeController,
   });
-
-  final RouteDraggableSheetController controller;
-  final LatLng destinationLocation;
 
   @override
   RouteDraggableSheetState createState() => RouteDraggableSheetState();
 }
 
 class RouteDraggableSheetState extends State<RouteDraggableSheet> {
-  final _routeController = RouteController.instance;
+  late final _routeController = widget.routeController;
   final scrollController = ScrollController();
 
   final _draggableController = DraggableScrollableController();
@@ -45,10 +44,9 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
 
   late final _canvasColor = Theme.of(context).canvasColor;
 
-  late final _directionResult = _routeController.directionResult.value;
-  late final _route = _directionResult.routes![0];
-  late final _leg = _route.legs![0];
-  late final _steps = _leg.steps!;
+  late final _route = _routeController.route;
+  late final _leg = _routeController.leg;
+  late final _steps = _routeController.routeStepsLatLng;
 
   late final _spotholesInRouteListSignal =
       _routeController.spotholesInRouteList;
@@ -64,7 +62,8 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
     }
   }
 
-  bool _haveWarnings() => _route.warnings?.isNotEmpty == true ? true : false;
+  bool _haveWarnings() =>
+      _route.value.warnings?.isNotEmpty == true ? true : false;
 
   void _showWarningsDialog() {
     showDialog(
@@ -84,7 +83,7 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
             ],
           ),
           content: BulletList(
-            items: _route.warnings!,
+            items: _route.value.warnings!,
           ),
           actions: [
             TextButton(
@@ -120,12 +119,15 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
     super.dispose();
   }
 
-  List<Widget> _horizontalListButtons(BuildContext context, position) {
+  List<Widget> _horizontalListButtons() {
     return [
       CustomButton(
         label: 'Iniciar viagem',
         bgColor: Colors.tealAccent.shade400,
-        onPressed: () => {},
+        onPressed: () => MyApp.navigatorKey.currentState?.pushNamed(
+          AppRoutes.navigation,
+          arguments: [_routeController.getCopy()],
+        ),
       ),
       CustomButton(
         label: 'Centralizar',
@@ -242,7 +244,8 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                 ),
                               IconButton(
                                 icon: const Icon(Icons.close),
-                                onPressed: () => Navigator.of(context).pop(),
+                                onPressed: () =>
+                                    MyApp.navigatorKey.currentState?.pop(),
                               ),
                             ],
                             bottom: TabBar(
@@ -258,8 +261,8 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                         Container(
                                           padding: const EdgeInsets.all(6),
                                           child: Text(
-                                            _steps.length < 100
-                                                ? '${_steps.length}'
+                                            _steps.value.length < 100
+                                                ? '${_steps.value.length}'
                                                 : '+99',
                                           ),
                                         ),
@@ -300,14 +303,14 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                   (context) => ListView.separated(
                                     controller: scrollController,
                                     physics: const ClampingScrollPhysics(),
-                                    itemCount: _steps.length + 2,
+                                    itemCount: _steps.value.length + 2,
                                     separatorBuilder: (context, index) =>
                                         const Divider(),
                                     itemBuilder: (context, index) {
                                       if (index == 0) {
                                         return ListTile(
                                           title: Text(
-                                              'Partida: ${_leg.startAddress!}'),
+                                              'Partida: ${_leg.value.startAddress!}'),
                                           leading: SizedBox(
                                             height: 35,
                                             width: 35,
@@ -331,16 +334,17 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                                 _intermediateDraggableChildSize),
                                             _routeController
                                               ..updateCameraGeoCoord(
-                                                  _leg.startLocation!)
+                                                  _leg.value.startLocation!)
                                               ..setupStepsPageView(0, 'route'),
                                           },
                                         );
-                                      } else if (index == _steps.length + 1) {
+                                      } else if (index ==
+                                          _steps.value.length + 1) {
                                         return ListTile(
                                           selected: _selectedIndex ==
-                                              _steps.length + 1,
+                                              _steps.value.length + 1,
                                           tileColor: _selectedIndex ==
-                                                  _steps.length + 1
+                                                  _steps.value.length + 1
                                               ? Colors.amber
                                               : null,
                                           selectedColor: Theme.of(context)
@@ -357,12 +361,12 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                                 _intermediateDraggableChildSize),
                                             _routeController
                                               ..updateCameraGeoCoord(
-                                                  _leg.endLocation!)
+                                                  _leg.value.endLocation!)
                                               ..setupStepsPageView(
                                                   index, 'route'),
                                           },
                                           title: Text(
-                                              'Destino: ${_leg.endAddress!}'),
+                                              'Destino: ${_leg.value.endAddress!}'),
                                           leading: SizedBox(
                                             height: 35,
                                             width: 35,
@@ -371,7 +375,7 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
                                           ),
                                         );
                                       } else {
-                                        final step = _steps[index - 1];
+                                        final step = _steps.value[index - 1];
                                         final maneuver =
                                             step.maneuver ?? 'straight';
                                         final icon = maneuverIcons[maneuver] ??
@@ -534,8 +538,7 @@ class RouteDraggableSheetState extends State<RouteDraggableSheet> {
               height: 60.0,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                children:
-                    _horizontalListButtons(context, widget.destinationLocation),
+                children: _horizontalListButtons(),
               ),
             ),
           ),

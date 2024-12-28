@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:spotholes_android/controllers/base_map_controller.dart';
+import 'package:signals/signals_flutter.dart';
 
+import '../../controllers/base_map_controller.dart';
 import '../../utilities/custom_icons.dart';
 import 'custom_floating_action_button.dart';
 
 class CustomFloatingActionButtonList extends StatelessWidget {
-  CustomFloatingActionButtonList({super.key});
-  final _baseMapController = BaseMapController.instance;
+  final BaseMapController baseMapController;
+  late final _isTrackingLocation = baseMapController.isTrackingLocation;
+
+  CustomFloatingActionButtonList({super.key, required this.baseMapController});
+
+  void trackingLocation() {
+    baseMapController.trackLocation();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,20 +28,24 @@ class CustomFloatingActionButtonList extends StatelessWidget {
           children: <Widget>[
             CustomFloatingActionButton(
                 tooltip: "Adicionar um risco",
-                onPressed: () =>
-                    _baseMapController.registerSpotholeModal(context),
+                onPressed: () => baseMapController.registerSpotholeModal(),
                 icon: CustomIcons.potholeAddIcon),
             const SizedBox(height: 10),
             CustomFloatingActionButton(
                 tooltip: "Sincronizar os riscos",
-                onPressed: () =>
-                    _baseMapController.loadSpotholeMarkers(context),
+                onPressed: () => baseMapController.loadSpotholeMarkers(),
                 icon: const Icon(Icons.sync)),
             const SizedBox(height: 10),
-            CustomFloatingActionButton(
-              tooltip: "Centralizar a câmera",
-              onPressed: _baseMapController.centerView,
-              icon: const Icon(Icons.location_searching),
+            Watch(
+              (_) => CustomFloatingActionButton(
+                tooltip: _isTrackingLocation.value
+                    ? "Desativar centralização de câmera"
+                    : "Ativar centralização de câmera",
+                onPressed: () => trackingLocation(),
+                icon: _isTrackingLocation.value
+                    ? const Icon(Icons.my_location)
+                    : const Icon(Icons.location_searching),
+              ),
             ),
           ],
         ),

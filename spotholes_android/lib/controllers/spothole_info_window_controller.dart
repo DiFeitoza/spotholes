@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals.dart';
 import 'package:spotholes_android/package/custom_info_window.dart';
 
+import '../main.dart';
 import '../models/spothole.dart';
 import '../services/service_locator.dart';
 import '../utilities/constants.dart';
@@ -35,7 +36,7 @@ class SpotholeInfoWindowController {
     );
   }
 
-  void addSpotholeMarker(context, Spothole spothole) {
+  void addSpotholeMarker(Spothole spothole) {
     final marker = Marker(
       markerId: MarkerId(spothole.id!),
       icon: spothole.type == Type.deepHole
@@ -46,9 +47,9 @@ class SpotholeInfoWindowController {
         _customInfoWindowControllerSignal.value.addInfoWindow!(
           SpotholeInfoWindow(
             editSpothole: () => editSpotholeModal(
-                context, spothole.id!, spothole.category, spothole.type),
+                spothole.id!, spothole.category, spothole.type),
             showDeleteSpotholeAlertDialog: () =>
-                showDeleteSpotholeAlertDialog(context, spothole.id!),
+                showDeleteSpotholeAlertDialog(spothole.id!),
             spothole: spothole,
           ),
           spothole.position,
@@ -58,7 +59,7 @@ class SpotholeInfoWindowController {
     _markersSignal.value[spothole.id!] = marker;
   }
 
-  void editSpothole(context, spotholeId, riskCategory, type) async {
+  void editSpothole(String spotholeId, Category riskCategory, Type type) async {
     final dateOfUpdate = DateTime.now().toUtc();
     final spotholeRef = databaseReference.ref.child('spotholes/$spotholeId');
     final event = await spotholeRef.once();
@@ -68,13 +69,16 @@ class SpotholeInfoWindowController {
     spothole.category = riskCategory;
     spothole.type = type;
     spothole.id = spotholeId;
-    addSpotholeMarker(context, spothole);
+    addSpotholeMarker(spothole);
+    _markersSignal.value = {..._markersSignal.value};
     _markersSignal.value[spotholeId]!.onTap!();
     updateCameraGoogleMapsController(spothole.position);
     spotholeRef.set(spothole.toJson());
   }
 
-  void editSpotholeModal(context, spotholeId, riskCategory, riskType) {
+  void editSpotholeModal(
+      String spotholeId, Category riskCategory, Type riskType) {
+    final context = MyApp.navigatorKey.currentContext!;
     showModalBottomSheet(
       context: context,
       builder: (builder) {
@@ -82,8 +86,8 @@ class SpotholeInfoWindowController {
           title: "Para editar um risco, selecione:",
           textOnRegisterButton: "Editar",
           isCountdown: false,
-          onRegister: (riskCategory, type) =>
-              editSpothole(context, spotholeId, riskCategory, type),
+          onRegister: (Category riskCategory, Type type) =>
+              editSpothole(spotholeId, riskCategory, type),
           riskCategory: riskCategory,
           riskType: riskType,
         );
@@ -91,7 +95,8 @@ class SpotholeInfoWindowController {
     );
   }
 
-  void showDeleteSpotholeAlertDialog(context, String spotholeId) {
+  void showDeleteSpotholeAlertDialog(String spotholeId) {
+    final context = MyApp.navigatorKey.currentContext!;
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -113,5 +118,6 @@ class SpotholeInfoWindowController {
 
   void removeMarkerByid(spotholeId) {
     _markersSignal.value.remove(spotholeId);
+    _markersSignal.value = {..._markersSignal.value};
   }
 }

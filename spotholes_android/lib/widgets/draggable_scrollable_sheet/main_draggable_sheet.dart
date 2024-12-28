@@ -12,9 +12,14 @@ class MainDraggableSheetController {
 }
 
 class MainDraggableSheet extends StatefulWidget {
-  const MainDraggableSheet({super.key, required this.controller});
-
   final MainDraggableSheetController controller;
+  final BaseMapController baseMapController;
+
+  const MainDraggableSheet({
+    super.key,
+    required this.controller,
+    required this.baseMapController,
+  });
 
   @override
   MainDraggableSheetState createState() => MainDraggableSheetState();
@@ -23,7 +28,7 @@ class MainDraggableSheet extends StatefulWidget {
 class MainDraggableSheetState extends State<MainDraggableSheet> {
   late ScrollController scrollController;
   late MainDraggableSheetController mainDraggableSheetController;
-  final _baseMapController = BaseMapController.instance;
+  late final _baseMapController = widget.baseMapController;
   late final _canvasColor = Theme.of(context).canvasColor;
   String _data = "";
 
@@ -40,7 +45,7 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
     super.dispose();
   }
 
-  List<Widget> _horizontalListButtons(BuildContext context) {
+  List<Widget> _horizontalListButtons() {
     return [
       CustomButton(
         label: 'Buscar',
@@ -50,7 +55,7 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
       ),
       CustomButton(
         label: 'Alertar',
-        onPressed: () => _baseMapController.registerSpotholeModal(context),
+        onPressed: () => _baseMapController.registerSpotholeModal(),
       ),
     ];
   }
@@ -113,7 +118,7 @@ class MainDraggableSheetState extends State<MainDraggableSheet> {
                           height: 60.0,
                           child: ListView(
                             scrollDirection: Axis.horizontal,
-                            children: _horizontalListButtons(context),
+                            children: _horizontalListButtons(),
                           ),
                         )
                       ],

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:spotholes_android/utilities/app_routes.dart';
 
 import '../../controllers/base_map_controller.dart';
+import '../../main.dart';
+import '../../utilities/app_routes.dart';
 import '../button/custom_button.dart';
 
 class LocationDraggableSheetController {
@@ -14,46 +15,45 @@ class LocationDraggableSheetController {
 }
 
 class LocationDraggableSheet extends StatefulWidget {
+  final LatLng position;
+  final String formattedPlacemark;
+  final BaseMapController baseMapController;
+
   const LocationDraggableSheet({
     super.key,
-    required this.controller,
-    required this.onRegister,
     required this.position,
     required this.formattedPlacemark,
+    required this.baseMapController,
   });
-
-  final LatLng position;
-  final Function onRegister;
-  final LocationDraggableSheetController controller;
-  final String formattedPlacemark;
 
   @override
   LocationDraggableSheetState createState() => LocationDraggableSheetState();
 }
 
 class LocationDraggableSheetState extends State<LocationDraggableSheet> {
-  late LocationDraggableSheetController controller;
+  // late LocationDraggableSheetController controller;
   final scrollController = ScrollController();
-  final _baseMapController = BaseMapController.instance;
+  late final _baseMapController = widget.baseMapController;
   late final _canvasColor = Theme.of(context).canvasColor;
 
-  void _registerSpotholeModal(BuildContext context) {
-    widget.onRegister();
-  }
-
-  List<Widget> _horizontalListButtons(BuildContext context, position) {
+  List<Widget> _horizontalListButtons() {
     return [
       CustomButton(
         label: 'Rota',
         bgColor: Colors.tealAccent.shade400,
-        onPressed: () => Navigator.of(context).pushNamed(
+        onPressed: () => MyApp.navigatorKey.currentState?.pushNamed(
           AppRoutes.route,
-          arguments: [_baseMapController.currentLocationLatLng, position],
+          arguments: [
+            _baseMapController.currentLocationLatLng,
+            widget.position
+          ],
         ),
       ),
       CustomButton(
         label: 'Alertar',
-        onPressed: () => _registerSpotholeModal(context),
+        onPressed: () => _baseMapController.registerSpotholeModal(
+          widget.position,
+        ),
       ),
     ];
   }
@@ -143,8 +143,7 @@ class LocationDraggableSheetState extends State<LocationDraggableSheet> {
                             height: 60.0,
                             child: ListView(
                               scrollDirection: Axis.horizontal,
-                              children: _horizontalListButtons(
-                                  context, widget.position),
+                              children: _horizontalListButtons(),
                             ),
                           )
                         ],
