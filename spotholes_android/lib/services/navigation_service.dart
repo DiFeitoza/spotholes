@@ -4,6 +4,7 @@ import 'package:flutter/material.dart' hide Step;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:maps_toolkit/maps_toolkit.dart' as mtk;
 import 'package:signals/signals_flutter.dart';
+import 'package:spotholes_android/utilities/point_on_route_haversine.dart';
 
 import '../controllers/route_controller.dart';
 import '../utilities/constants.dart';
@@ -43,6 +44,16 @@ class NavigationService {
     if (_exitRouteTimer != null) {
       _exitRouteTimer!.cancel();
     }
+  }
+
+  void updateCurrentLocationOnRouteProgress(LatLng currentLocation) {
+    final projectionPoint = projectionPointOnSegment(
+      currentLocation,
+      _routePolylineCoordinatesSignal.value[0],
+      _routePolylineCoordinatesSignal.value[1],
+    );
+    _routePolylineCoordinatesSignal.value[0] = projectionPoint;
+    _routeController.updateRoutePolyline();
   }
 
   List<mtk.LatLng> convertGmapsToMtkList(List<LatLng> originalList) {
@@ -87,21 +98,26 @@ class NavigationService {
     mtk.LatLng currentLocationMtk = locationToMtkLatLng(currentLocation);
     int index = locationIndexOnPath(currentLocationMtk, routePointsMtk);
     debugPrint('----index on polyline: $index');
+
     /// If the current location is on the route
     if (index > 0) {
       _countOutOfRoute = 0;
+
       /// Set the initial position to the current location
       routePointsMtk[index] = currentLocationMtk;
+
       /// Remove the initial points up to the current position
-      routePointsMtk.removeRange(0, index + 1);
-      _routePolylineCoordinatesSignal.value.removeRange(0, index + 1);
-      _routePolylineCoordinatesSignal.value[0] = currentLocation;
-      _routeController.updateRoutePolyline();
+      routePointsMtk.removeRange(0, index);
+      _routePolylineCoordinatesSignal.value.removeRange(0, index);
+      updateCurrentLocationOnRouteProgress(currentLocation);
+
       /// Update the discarded points counter
-      _discardedPointsCounter += index + 1;
+      _discardedPointsCounter += index;
       debugPrint('Points to discard $_discardedPointsCounter');
+
       /// Check the current step on the route
       int currentStepIndex = verifyStep();
+
       /// If the step has advanced, the pageview is updated
       if (currentStepIndex > 0 && _pageController.hasClients) {
         /// Update the polyline that represents the maneuver arrow on the map. Needs to be done before removing the steps
@@ -109,6 +125,7 @@ class NavigationService {
           _routeController.plotManeuverPolyline(currentStepIndex,
               updateCamera: false);
         }
+
         /// Remove the steps that have passed
         _stepsIndexes.removeRange(0, currentStepIndex);
         _routeStepsLatLng.value.removeRange(0, currentStepIndex);
@@ -116,6 +133,7 @@ class NavigationService {
         final stepsLength = _routeStepsLatLng.value.length;
         final totalRemovedSteps = currentStepIndex;
         final page = _pageController.page!.toInt();
+
         /// Check if the pageView return movement ends at most on page 01 (step 0)
         /// if the current page is between page 01 and the penultimate page (within the steps list)
         if (totalRemovedSteps < page && page > 1 && page < stepsLength + 2) {
@@ -127,11 +145,12 @@ class NavigationService {
         }
         debugPrint('---pages: ${_pageController.page} $currentStepIndex');
       }
+
       /// If it is between position 0 and 1 of the polyline (index == 0), then the polyline is updated
     } else if (index == 0) {
       _countOutOfRoute = 0;
-      _routePolylineCoordinatesSignal.value[0] = currentLocation;
-      _routeController.updateRoutePolyline();
+      updateCurrentLocationOnRouteProgress(currentLocation);
+
       /// If it is the last step and has less than 3 points, then discard the last step, points and complete the route
     } else if (_routeStepsLatLng.value.length == 1 &&
         _routePolylineCoordinatesSignal.value.length < 3) {
@@ -140,6 +159,7 @@ class NavigationService {
       _routeController.finishNavigationRoute();
     } else {
       _countOutOfRoute += 1;
+
       /// Recalculate the route after 5 consecutive movements off the route (considering the tolerance margin in meters)
       /// Only recalculate the route 3 times automatically, avoiding failures that generate many recalculations
       // TODO Create Snackbar to warn that the limit of 3 times has been exceeded, asking if you want to recalculate manually, if yes, 3 more automatic recalculations
