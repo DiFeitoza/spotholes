@@ -60,11 +60,9 @@ class _NavigationPageState extends State<NavigationPage> {
   late final spotholeFomattedDistance = computed(() {
     if (_currentSpotholeDistance.value > 1000) {
       final kilometerDistance = _currentSpotholeDistance.value / 1000;
-      return 'a ${kilometerDistance.toStringAsFixed(1)} Km';
+      return 'a ${kilometerDistance.toStringAsFixed(1)} km';
     } else {
-      final formattedMeter =
-          _currentSpotholeDistance.value == 1 ? 'metro' : 'metros';
-      return '${_currentSpotholeDistance.value.truncate()} $formattedMeter';
+      return '${_currentSpotholeDistance.value.truncate()} m';
     }
   });
 
@@ -119,14 +117,14 @@ class _NavigationPageState extends State<NavigationPage> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 isDeephole.value
-                                    ? CustomIcons.potholeRedSignImageSmall
-                                    : CustomIcons.potholeSignImageSmall,
+                                    ? CustomIcons.potholeRedSignImageLarge
+                                    : CustomIcons.potholeSignImageLarge,
                                 const SizedBox(width: 10),
                                 Text(
                                   '$spotholeFomattedDistance',
                                   style: Theme.of(context)
                                       .textTheme
-                                      .titleLarge!
+                                      .displayLarge!
                                       .copyWith(
                                         color: isDeephole.value
                                             ? Colors.white

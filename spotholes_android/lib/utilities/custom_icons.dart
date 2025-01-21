@@ -37,10 +37,16 @@ class CustomIcons {
       Image.asset('assets/images/pothole_red_sign.png', width: 40, height: 40);
   static Image potholeRedSignImageSmall =
       Image.asset('assets/images/pothole_red_sign.png', width: 25, height: 25);
+  static Image potholeRedSignImageLarge =
+      Image.asset('assets/images/pothole_red_sign.png', width: 55, height: 55);
+
   static Image potholeSignImage =
       Image.asset('assets/images/pothole_sign.png', width: 40, height: 40);
   static Image potholeSignImageSmall =
       Image.asset('assets/images/pothole_sign.png', width: 25, height: 25);
+  static Image potholeSignImageLarge =
+      Image.asset('assets/images/pothole_sign.png', width: 55, height: 55);
+
   static Image sourceIconAsset = Image.asset('assets/images/source_route.png');
   static Image destinationIconAsset =
       Image.asset('assets/images/end_route.png');
