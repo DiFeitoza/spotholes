@@ -35,14 +35,15 @@ class CustomIcons {
   );
   static Image potholeRedSignImage =
       Image.asset('assets/images/pothole_red_sign.png', width: 40, height: 40);
+  static Image potholeRedSignImageSmall =
+      Image.asset('assets/images/pothole_red_sign.png', width: 25, height: 25);
   static Image potholeSignImage =
       Image.asset('assets/images/pothole_sign.png', width: 40, height: 40);
-  static Image sourceIconAsset = Image.asset(
-    'assets/images/source_route.png',
-  );
-  static Image destinationIconAsset = Image.asset(
-    'assets/images/end_route.png',
-  );
+  static Image potholeSignImageSmall =
+      Image.asset('assets/images/pothole_sign.png', width: 25, height: 25);
+  static Image sourceIconAsset = Image.asset('assets/images/source_route.png');
+  static Image destinationIconAsset =
+      Image.asset('assets/images/end_route.png');
 
   static setupCustomIcons() {
     ImageSizeAdjust.getCustomIcon('assets/images/source_route.png', 110).then(

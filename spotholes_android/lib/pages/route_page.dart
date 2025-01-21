@@ -83,8 +83,10 @@ class _RoutePageState extends State<RoutePage> with RouteAware {
   @override
   void didPopNext() {
     _routeController.centerViewRoute();
+
     /// Avoid exception when the user returns from the navigation page and try access the info window
     _customInfoWindowControllerSignal.value.hideInfoWindow!();
+
     /// Update markers when the user returns from the navigation page changing the customInfoWindowController with the new mapController
     _routeController.updateAllRouteMarkers();
   }

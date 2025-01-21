@@ -30,6 +30,7 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
   late final _pageController = widget.pageController;
   late final _isPageViewUpdateCamera = widget.isPageViewUpdateCamera;
   int _currentPage = 0;
+  bool _ignoreInitialPageChange = true;
 
   late final _leg = _routeController.leg;
   late final _steps = _routeController.routeStepsLatLng;
@@ -40,27 +41,37 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _animateOnce();
     });
+  }
 
+  void pageControllerAddListener() {
     _pageController.addListener(
       () {
-        int newPage = _pageController.page!.round();
-        if (newPage != _currentPage) {
-          _currentPage = newPage;
-          _routeController.clearManeuverPolyline();
-          if (_currentPage == 0) {
-            _routeController.updateCameraGeoCoord(_leg.value.startLocation!);
-          } else if (_currentPage == _steps.value.length + 1) {
-            _routeController.updateCameraGeoCoord(_leg.value.endLocation!);
-          } else {
-            final stepIndex = _currentPage - 1;
-            if (_isPageViewUpdateCamera.value) {
-              _routeController.plotManeuverPolyline(stepIndex,
-                  updateCamera: true);
+        if (_ignoreInitialPageChange) {
+          _ignoreInitialPageChange = false;
+        } else {
+          int newPage = _pageController.page!.round();
+          if (newPage != _currentPage) {
+            _currentPage = newPage;
+            _routeController.clearManeuverPolyline();
+            if (_currentPage == 0) {
+              _routeController.updateCameraGeoCoord(_leg.value.startLocation!);
+            } else if (_currentPage == _steps.value.length + 1) {
+              _routeController.updateCameraGeoCoord(_leg.value.endLocation!);
             } else {
-              /// If it is an execution that does not need to update the camera, return to the default state
-              _isPageViewUpdateCamera.value = true;
-              _routeController.plotManeuverPolyline(stepIndex,
-                  updateCamera: false);
+              final stepIndex = _currentPage - 1;
+              if (_isPageViewUpdateCamera.value) {
+                _routeController.plotManeuverPolyline(
+                  stepIndex,
+                  updateCamera: true,
+                );
+              } else {
+                /// If it is an execution that does not need to update the camera, return to the default state
+                _isPageViewUpdateCamera.value = true;
+                _routeController.plotManeuverPolyline(
+                  stepIndex,
+                  updateCamera: false,
+                );
+              }
             }
           }
         }
@@ -68,19 +79,19 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
     );
   }
 
-  void _animateOnce() {
+  void _animateOnce() async {
     if (_pageController.hasClients) {
-      _pageController.animateTo(
+      await _pageController.animateTo(
         _pageController.position.pixels +
             MediaQuery.of(context).size.width / 3.5,
         duration: const Duration(milliseconds: 500),
         curve: Curves.linear,
       );
-      Future.delayed(
+      await Future.delayed(
         const Duration(milliseconds: 600),
-        () {
+        () async {
           if (_pageController.hasClients) {
-            _pageController.animateTo(
+            await _pageController.animateTo(
               _pageController.position.pixels -
                   MediaQuery.of(context).size.width / 3.5,
               duration: const Duration(milliseconds: 500),
@@ -90,6 +101,9 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
         },
       );
     }
+    await Future.delayed(const Duration(milliseconds: 1100));
+    // TODO Find the correct strategy so that the listener only starts being triggered after the end of the animation actions, without the need to introduce the delay!
+    pageControllerAddListener();
   }
 
   @override
@@ -132,6 +146,7 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
                     ),
                   ),
                 );
+
                 /// If it is the destination step
               } else if (index == _steps.value.length + 1) {
                 return Watch(
@@ -159,6 +174,7 @@ class NavRouteStepsStatePageView extends State<NavRouteStepsPageView> {
                     ),
                   ),
                 );
+
                 /// Other steps that contain maneuvers, excluding origin and destination
               } else if (index >= 1 && index <= _steps.value.length) {
                 final step = _steps.value[index - 1];

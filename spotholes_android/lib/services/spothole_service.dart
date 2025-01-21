@@ -49,6 +49,7 @@ class SpotholeService {
   void loadSpotholesInRoute(
     List<LatLng> routePolylineCoordinates,
     Signal<List<Spothole>> spotholesInRouteList,
+    List<double> accumulatedDistancesByRouteSegment,
   ) {
     databaseReference.child('spotholes').once().then(
       (DatabaseEvent event) {
@@ -61,9 +62,11 @@ class SpotholeService {
             spothole.id = entry.key;
             return spothole;
           }).toList();
-          spotholesInRouteList.value = checkSpotholesAndStoreAccumulatedDistances(
+          spotholesInRouteList.value =
+              checkSpotholesAndStoreAccumulatedDistances(
             spotholeList,
             routePolylineCoordinates,
+            accumulatedDistancesByRouteSegment,
           );
           addSpotholeMarkers(spotholesInRouteList);
         }

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart' hide Step;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:maps_toolkit/maps_toolkit.dart' as mtk;
@@ -24,36 +22,87 @@ class NavigationService {
 
   late final _routePolylineCoordinatesSignal =
       _routeController.routePolylineCoordinatesSignal;
+  late final _auxRoutePolylineCoordinatesSignal =
+      _routeController.auxRoutePolylineCoordinatesSignal;
+
   late final _stepsIndexes = _routeController.stepsIndexes;
   late final _routeStepsLatLng = _routeController.routeStepsLatLng;
 
-  int _discardedPointsCounter = 0;
+  late final _discardedPointsCounter = _routeController.discardedPointsCounter;
+
   int _countOutOfRoute = 0;
   int _countRecalculatedRoute = 0;
-  List<mtk.LatLng> routePointsMtk = [];
+  List<mtk.LatLng> _routePointsMtk = [];
 
-  Timer? _exitRouteTimer;
+  late final spotholesInRoute = _routeController.spotholesInRouteList;
+  late final accumulatedDistancesByRouteSegment =
+      _routeController.accumulatedDistancesByRouteSegment;
 
-  void startNavigation() {
-    routePointsMtk =
-        convertGmapsToMtkList(_routePolylineCoordinatesSignal.value);
-  }
+  late final _currentSpotholeIndex = _routeController.currentSpotholeIndex;
+  late final _currentSpotholeDistance =
+      _routeController.currentSpotholeDistance;
 
-  void stopNavigation() {
-    _discardedPointsCounter = 0;
-    if (_exitRouteTimer != null) {
-      _exitRouteTimer!.cancel();
+  void updateCurrentSpothole(double currentOffsetDifference) {
+    if (spotholesInRoute.value.isNotEmpty &&
+        _currentSpotholeIndex.value < spotholesInRoute.value.length) {
+      for (int i = _currentSpotholeIndex.value;
+          i < spotholesInRoute.value.length;
+          i++) {
+        final currentSpotholeAccumulatedDistance =
+            spotholesInRoute.value[_currentSpotholeIndex.value].distance!;
+        final currentRouteSegmentAccumulatedDistance =
+            accumulatedDistancesByRouteSegment
+                .value[_discardedPointsCounter.value];
+        if (currentSpotholeAccumulatedDistance <
+            (currentRouteSegmentAccumulatedDistance +
+                currentOffsetDifference)) {
+          _currentSpotholeIndex.value++;
+        } else {
+          return;
+        }
+      }
     }
   }
 
-  void updateCurrentLocationOnRouteProgress(LatLng currentLocation) {
-    final projectionPoint = projectionPointOnSegment(
+  void updateDistanceToSpothole(double currentOffsetDifference) {
+    updateCurrentSpothole(currentOffsetDifference);
+    if (spotholesInRoute.value.isNotEmpty &&
+        _currentSpotholeIndex.value < spotholesInRoute.value.length) {
+      final currentSpotholeAccumulatedDistance =
+          spotholesInRoute.value[_currentSpotholeIndex.value].distance!;
+      final currentRouteSegmentAccumulatedDistance =
+          accumulatedDistancesByRouteSegment
+              .value[_discardedPointsCounter.value];
+      final spotholeDistance = (currentSpotholeAccumulatedDistance -
+              currentRouteSegmentAccumulatedDistance) -
+          currentOffsetDifference;
+      _currentSpotholeDistance.set(spotholeDistance, force: true);
+    } else {
+      _currentSpotholeDistance.set(double.infinity, force: true);
+    }
+  }
+
+  void updateCurrentLocationOnRouteProgress(
+      LatLng currentLocation, mtk.LatLng currentLocationMkt) {
+    final currentLocationProjectionPoint = projectionPointOnSegment(
       currentLocation,
       _routePolylineCoordinatesSignal.value[0],
       _routePolylineCoordinatesSignal.value[1],
     );
-    _routePolylineCoordinatesSignal.value[0] = projectionPoint;
+
+    /// Calculates the current offset difference between the current location projection
+    /// and the in-progress current route point using the Haversine formula.
+    final currentOffsetDifference = haversine(
+      currentLocationProjectionPoint,
+      _auxRoutePolylineCoordinatesSignal.value[_discardedPointsCounter.value],
+    );
+
+    /// Set the initial position to the current location and update the polyline
+    _routePointsMtk[0] = currentLocationMkt;
+    _routePolylineCoordinatesSignal.value[0] = currentLocationProjectionPoint;
     _routeController.updateRoutePolyline();
+
+    updateDistanceToSpothole(currentOffsetDifference);
   }
 
   List<mtk.LatLng> convertGmapsToMtkList(List<LatLng> originalList) {
@@ -80,7 +129,7 @@ class NavigationService {
 
   int verifyStep() {
     for (int i = 0; i < _stepsIndexes.length; i++) {
-      if (_discardedPointsCounter <= _stepsIndexes[i]) {
+      if (_discardedPointsCounter.value <= _stepsIndexes[i]) {
         return i;
       }
     }
@@ -93,27 +142,23 @@ class NavigationService {
     if (_routeStepsLatLng.value.isEmpty) {
       return;
     }
-    routePointsMtk =
+    _routePointsMtk =
         convertGmapsToMtkList(_routePolylineCoordinatesSignal.value);
     mtk.LatLng currentLocationMtk = locationToMtkLatLng(currentLocation);
-    int index = locationIndexOnPath(currentLocationMtk, routePointsMtk);
-    debugPrint('----index on polyline: $index');
+    int index = locationIndexOnPath(currentLocationMtk, _routePointsMtk);
 
-    /// If the current location is on the route
+    /// If the current location advences on the polyline, then the points are discarded
     if (index > 0) {
       _countOutOfRoute = 0;
 
-      /// Set the initial position to the current location
-      routePointsMtk[index] = currentLocationMtk;
-
       /// Remove the initial points up to the current position
-      routePointsMtk.removeRange(0, index);
+      _routePointsMtk.removeRange(0, index);
       _routePolylineCoordinatesSignal.value.removeRange(0, index);
-      updateCurrentLocationOnRouteProgress(currentLocation);
+
+      updateCurrentLocationOnRouteProgress(currentLocation, currentLocationMtk);
 
       /// Update the discarded points counter
-      _discardedPointsCounter += index;
-      debugPrint('Points to discard $_discardedPointsCounter');
+      _discardedPointsCounter.value += index;
 
       /// Check the current step on the route
       int currentStepIndex = verifyStep();
@@ -122,8 +167,10 @@ class NavigationService {
       if (currentStepIndex > 0 && _pageController.hasClients) {
         /// Update the polyline that represents the maneuver arrow on the map. Needs to be done before removing the steps
         if (_isTrackingLocation.value || _pageController.page == 1) {
-          _routeController.plotManeuverPolyline(currentStepIndex,
-              updateCamera: false);
+          _routeController.plotManeuverPolyline(
+            currentStepIndex,
+            updateCamera: false,
+          );
         }
 
         /// Remove the steps that have passed
@@ -143,19 +190,17 @@ class NavigationService {
           /// It is necessary to update to force the widget to render, however, this avoids duplication of the update because the jumpToPage invokes a method that updates the list
           _routeStepsLatLng.value = [..._routeStepsLatLng.value];
         }
-        debugPrint('---pages: ${_pageController.page} $currentStepIndex');
       }
 
       /// If it is between position 0 and 1 of the polyline (index == 0), then the polyline is updated
     } else if (index == 0) {
       _countOutOfRoute = 0;
-      updateCurrentLocationOnRouteProgress(currentLocation);
+      updateCurrentLocationOnRouteProgress(currentLocation, currentLocationMtk);
 
       /// If it is the last step and has less than 3 points, then discard the last step, points and complete the route
     } else if (_routeStepsLatLng.value.length == 1 &&
         _routePolylineCoordinatesSignal.value.length < 3) {
       _countOutOfRoute = 0;
-      debugPrint('---Reached the end');
       _routeController.finishNavigationRoute();
     } else {
       _countOutOfRoute += 1;
@@ -165,11 +210,12 @@ class NavigationService {
       // TODO Create Snackbar to warn that the limit of 3 times has been exceeded, asking if you want to recalculate manually, if yes, 3 more automatic recalculations
       if (_countOutOfRoute > 5 && _countRecalculatedRoute <= 3) {
         _countOutOfRoute = 0;
+        _discardedPointsCounter.value = 0;
+        _currentSpotholeIndex.value = 0;
+        _currentSpotholeDistance.value = double.infinity;
         _routeController.recalculateRoute(currentLocation);
         _countRecalculatedRoute += 1;
       }
     }
-    debugPrint(
-        '----[After discard] points ${_routePolylineCoordinatesSignal.value.length} steps:${_routeStepsLatLng.value.length}');
   }
 }

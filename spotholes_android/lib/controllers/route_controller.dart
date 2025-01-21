@@ -18,6 +18,7 @@ import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
 import '../utilities/maneuver_arrow_polyline.dart';
 import '../utilities/map_utils.dart';
+import '../utilities/point_on_route_haversine.dart';
 import '../widgets/info_window/marker_info_window.dart';
 import '../widgets/route_finished_alert_dialog.dart';
 
@@ -32,6 +33,7 @@ class RouteController {
   late final dataBaseSpotholesRef = databaseReference.child('spotholes');
 
   final _googleMapControllerCompleter = Completer<GoogleMapController>();
+
   Future<GoogleMapController> get getGoogleMapController async =>
       await _googleMapControllerCompleter.future;
 
@@ -62,9 +64,20 @@ class RouteController {
   Signal<List<LatLng>> get routePolylineCoordinatesSignal =>
       _routePolylineCoordinatesSignal;
 
+  /// Store an auxiliary copy of the route polyline points
+  /// This variable is used to store the original data of the route polyline points
+  var _auxRoutePolylineCoordinatesSignal = Signal<List<LatLng>>([]);
+  Signal<List<LatLng>> get auxRoutePolylineCoordinatesSignal =>
+      _auxRoutePolylineCoordinatesSignal;
+
   /// Store a result from a request for a route on Google Directions API
   var _directionResult = Signal<DirectionsResult>(const DirectionsResult());
   Signal<DirectionsResult> get directionResult => _directionResult;
+
+  /// Store accumulated distances by route segment
+  var _accumulatedDistancesByRouteSegment = Signal<List<double>>([]);
+  Signal<List<double>> get accumulatedDistancesByRouteSegment =>
+      _accumulatedDistancesByRouteSegment;
 
   // Common computed signal route variables
   late final _route = computed(() => _directionResult.value.routes![0]);
@@ -85,6 +98,7 @@ class RouteController {
   /// This variable cannot be computed because it needs to be reactive as a List
   var _routeStepsLatLng = Signal<List<Step>>([]);
   Signal<List<Step>> get routeStepsLatLng => _routeStepsLatLng;
+
   /// This variable is just an independent copy of the routeStepsLatLng to mantain the original data
   var _auxRouteStepsLatLng = Signal<List<Step>>([]);
 
@@ -104,10 +118,19 @@ class RouteController {
   final LocationService _locationService = LocationService.instance;
   late final _currentLocationSignal = _locationService.currentLocationSignal;
 
-  static Function? _dispose;
+  static Function? _listenCurrentLocationDispose;
+
+  var _currentSpotholeIndex = signal(0);
+  Signal<int> get currentSpotholeIndex => _currentSpotholeIndex;
+
+  var _currentSpotholeDistance = signal(double.infinity);
+  Signal<double> get currentSpotholeDistance => _currentSpotholeDistance;
+
+  var _discardedPointsCounter = signal(0);
+  Signal<int> get discardedPointsCounter => _discardedPointsCounter;
 
   void listenCurrentLocation() async {
-    _dispose = effect(() {
+    _listenCurrentLocationDispose = effect(() {
       if (_currentLocationSignal.value != null) {
         untracked(() {
           _locationService.loadCurrentLocationMark(
@@ -237,6 +260,9 @@ class RouteController {
           final routePointsData =
               decodePointsFromSteps(_routeStepsLatLng.value);
           _routePolylineCoordinatesSignal.value = routePointsData.points;
+          _auxRoutePolylineCoordinatesSignal.value = [
+            ..._routePolylineCoordinatesSignal.value
+          ];
           _stepsIndexes = routePointsData.stepsIndexes;
           _polylinesSignal.value['route'] = Polyline(
             polylineId: const PolylineId("route"),
@@ -249,8 +275,13 @@ class RouteController {
           loadRouteMarkers(_routePolylineCoordinatesSignal.value.first,
               _routePolylineCoordinatesSignal.value.last);
           centerViewRoute();
+          _accumulatedDistancesByRouteSegment.value =
+              calculateAccumulatedDistances(
+                  _routePolylineCoordinatesSignal.value);
           _spotholeService.loadSpotholesInRoute(
-              routePolylineCoordinatesSignal.value, _spotholesInRouteList);
+              routePolylineCoordinatesSignal.value,
+              spotholesInRouteList,
+              _accumulatedDistancesByRouteSegment.value);
         } else {
           // TODO do something with error response
         }
@@ -385,6 +416,7 @@ class RouteController {
       geodesic: true,
       jointType: JointType.round,
     );
+
     /// Forces the update of the route polylines
     polylinesSignal.value = {...polylinesSignal.value};
   }
@@ -447,10 +479,17 @@ class RouteController {
     copy._spotholesInRouteList = _spotholesInRouteList;
     copy._polylinesSignal = _polylinesSignal;
     copy._routePolylineCoordinatesSignal = _routePolylineCoordinatesSignal;
+    copy._auxRoutePolylineCoordinatesSignal =
+        _auxRoutePolylineCoordinatesSignal;
     copy._directionResult = _directionResult;
     copy._routeStepsLatLng = _routeStepsLatLng;
     copy._auxRouteStepsLatLng = _auxRouteStepsLatLng;
+    copy._accumulatedDistancesByRouteSegment =
+        _accumulatedDistancesByRouteSegment;
     copy._stepsIndexes = _stepsIndexes;
+    copy._currentSpotholeIndex = _currentSpotholeIndex;
+    copy._currentSpotholeDistance = _currentSpotholeDistance;
+    copy._discardedPointsCounter = _discardedPointsCounter;
     // copy._pageControllerSignal.value = PageController(initialPage: 1);
     // copy._googleMapController = null;
     // copy._customInfoWindowControllerSignal.value =
@@ -462,6 +501,6 @@ class RouteController {
   }
 
   static dispose() {
-    _dispose!();
+    _listenCurrentLocationDispose!();
   }
 }

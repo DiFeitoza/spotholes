@@ -6,17 +6,21 @@ import 'package:spotholes_android/services/navigation_service.dart';
 
 import '../services/location_service.dart';
 import '../utilities/constants.dart';
+import '../utilities/vibration_manager.dart';
 import 'route_controller.dart';
 
 class NavigationController {
   final RouteController _routeController;
-  NavigationController(this._routeController);
+  NavigationController(this._routeController) {
+    _startVibrationMonitorAlert();
+  }
 
   final LocationService _locationService = LocationService.instance;
   late final Signal<LocationData?> _currentLocationSignal =
       _locationService.currentLocationSignal;
 
-  static Function? _dispose;
+  static Function? _listenCurrentLocationDispose;
+  static Function? _startVibrationMonitorAlertDispose;
 
   final _pageController = PageController(initialPage: 1);
   get pageController => _pageController;
@@ -25,9 +29,56 @@ class NavigationController {
   final isProgrammaticMove = signal(true);
   final isPageViewMoveCamera = signal(true);
 
-  late final _navigationService = NavigationService(_routeController,
-      _pageController, isTrackingLocation, isPageViewMoveCamera);
+  late final _currentSpotholeDistance =
+      _routeController.currentSpotholeDistance;
+
+  late final _navigationService = NavigationService(
+    _routeController,
+    _pageController,
+    isTrackingLocation,
+    isPageViewMoveCamera,
+  );
   get navigationService => _navigationService;
+
+  void listenCurrentLocation() async {
+    _listenCurrentLocationDispose = effect(
+      () {
+        if (_currentLocationSignal.value != null) {
+          final LatLng currentLocation = _locationService.currentLocationLatLng;
+          final double heading = _currentLocationSignal.value!.heading!;
+          untracked(
+            () {
+              _navigationService.updateRouteStatus(currentLocation);
+            },
+          );
+          if (isTrackingLocation.value) {
+            _updateNavigationCamera(currentLocation, heading);
+          }
+        }
+      },
+    );
+  }
+
+  void _startVibrationMonitorAlert() {
+    _startVibrationMonitorAlertDispose = effect(
+      () {
+        if (_currentSpotholeDistance.value < 100) {
+          VibrationManager.alertImminentRisk();
+        } else if (_currentSpotholeDistance.value < 200) {
+          VibrationManager.alertProximity();
+        } else {
+          VibrationManager.cancelVibration();
+        }
+      },
+    );
+  }
+
+  void onMapCreated(mapController) {
+    mapController.setMapStyle(mapStyle2D);
+    _routeController.onMapCreated(mapController);
+    listenCurrentLocation();
+    _routeController.updateAllRouteMarkers();
+  }
 
   void goToCurrentStepPageView() {
     if (_pageController.page != 1) {
@@ -45,32 +96,6 @@ class NavigationController {
       goToCurrentStepPageView();
       centerCurrentLocation();
     }
-  }
-
-  void onMapCreated(mapController) {
-    mapController.setMapStyle(mapStyle2D);
-    _routeController.onMapCreated(mapController);
-    listenCurrentLocation();
-    _routeController.updateAllRouteMarkers();
-  }
-
-  void listenCurrentLocation() async {
-    _dispose = effect(
-      () {
-        if (_currentLocationSignal.value != null) {
-          final LatLng currentLocation = _locationService.currentLocationLatLng;
-          final double heading = _currentLocationSignal.value!.heading!;
-          untracked(
-            () {
-              _navigationService.updateRouteStatus(currentLocation);
-            },
-          );
-          if (isTrackingLocation.value) {
-            _updateNavigationCamera(currentLocation, heading);
-          }
-        }
-      },
-    );
   }
 
   void _updateNavigationCamera(LatLng position, double heading) async {
@@ -108,7 +133,7 @@ class NavigationController {
   }
 
   static dispose() {
-    // _navigationService.dispose();
-    _dispose!();
+    _listenCurrentLocationDispose!();
+    _startVibrationMonitorAlertDispose!();
   }
 }
