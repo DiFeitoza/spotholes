@@ -1,0 +1,102 @@
+import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:signals/signals_flutter.dart';
+import 'package:spotholes_android/utilities/dark_mode_context_extension.dart';
+
+import '../controllers/base_map_controller.dart';
+import '../package/custom_info_window.dart';
+import '../utilities/constants.dart';
+import '../widgets/button/custom_floating_action_button_list.dart';
+import '../widgets/search_bar.dart';
+
+class BaseMapPage extends StatefulWidget {
+  const BaseMapPage({super.key});
+  @override
+  State<BaseMapPage> createState() => BaseMapPageState();
+}
+
+class BaseMapPageState extends State<BaseMapPage> {
+  final _baseMapController = BaseMapController();
+  late final _customInfoWindowControllerSignal =
+      _baseMapController.customInfoWindowControllerSignal;
+  late final _markersSignal = _baseMapController.markersSignal;
+  late final _currentLocationSignal = _baseMapController.currentLocationSignal;
+  late final _draggableScrollableSheetSignal =
+      _baseMapController.draggableScrollableSheetSignal;
+  late final _isProgrammaticMove = _baseMapController.isProgrammaticMove;
+  late final _isTrackingLocation = _baseMapController.isTrackingLocation;
+
+  void _onMapCreated(mapController) {
+    _baseMapController.onMapCreated(mapController);
+  }
+
+  void _onLongPress(LatLng position) {
+    _baseMapController.onLongPress(context, position);
+  }
+
+  @override
+  void dispose() {
+    _baseMapController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Watch(
+      (_) => Scaffold(
+        backgroundColor: context.isDarkMode ? Colors.black : Colors.white,
+        body: SafeArea(
+          child: Container(
+            color: context.isDarkMode ? Colors.white : Colors.black,
+            child: _currentLocationSignal.value == null
+                ? const Center(
+                    child: Text("Carregando..."),
+                  )
+                : Stack(
+                    children: [
+                      GoogleMap(
+                        onMapCreated: _onMapCreated,
+                        initialCameraPosition: CameraPosition(
+                          target: LatLng(
+                            _currentLocationSignal.value!.latitude!,
+                            _currentLocationSignal.value!.longitude!,
+                          ),
+                          zoom: defaultZoomMap,
+                        ),
+                        onCameraIdle: () => _customInfoWindowControllerSignal
+                            .value.onCameraMove!(),
+                        markers: _markersSignal.value.values.toSet(),
+                        onLongPress: _onLongPress,
+                        zoomControlsEnabled: false,
+                        onTap: (position) => _customInfoWindowControllerSignal
+                            .value.hideInfoWindow!(),
+                        onCameraMove: (position) {
+                          _customInfoWindowControllerSignal
+                              .value.onCameraMove!();
+                        },
+                        onCameraMoveStarted: () {
+                          if (!_isProgrammaticMove.value) {
+                            _isTrackingLocation.value = false;
+                          } else {
+                            _isProgrammaticMove.value = false;
+                          }
+                        },
+                      ),
+                      CustomInfoWindow(
+                        controller: _customInfoWindowControllerSignal.value,
+                      ),
+                      CustomFloatingActionButtonList(
+                        baseMapController: _baseMapController,
+                      ),
+                      CustomHeader(
+                        baseMapController: _baseMapController,
+                      ),
+                      _draggableScrollableSheetSignal.value,
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}

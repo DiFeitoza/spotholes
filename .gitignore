@@ -1,0 +1,14 @@
+# VS Code related
+.vscode/
+
+# Experimental codes
+/experimental_codes
+
+# IntelluJ IDEA (Android Studio) related
+.idea
+
+# Environment
+.env
+
+# Project related
+pubspec.lock

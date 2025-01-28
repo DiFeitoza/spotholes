@@ -1,0 +1,63 @@
+name: Create Feature Pull Request
+
+on:
+  create:
+  # push:
+  #   branches-ignore:
+  #     - master
+  #     - develop
+
+jobs:
+  auto-pull-request:
+    name: CreatePullRequest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract Branch Name
+        shell: bash
+        run: |
+          branch=$(echo ${GITHUB_REF#refs/heads/})
+          issue_id=$(echo $branch | cut -d'-' -f1)
+          echo "branch=$branch" >> $GITHUB_ENV
+          echo "issue_id=$issue_id" >> $GITHUB_ENV
+        id: extract_branch
+
+      - name: pull-request-action
+        uses: vsoch/pull-request-action@1.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULL_REQUEST_BRANCH: "develop"
+          PULL_REQUEST_TITLE: ${{ env.branch }}
+          PULL_REQUEST_DRAFT: true
+          PULL_REQUEST_BODY: |
+            # Issue Information
+
+            <!--- Update the GitHub issue below --->
+            Please check the following GitHub issues to find out more about this PR:
+            - https://github.com/DiFeitoza/spotholes/issues/${{ env.issue_id }}
+
+            Closes #${{ env.issue_id }}
+            
+            # Checklist
+            - [] Do the commit messages reference the GitHub issue? (i.e. issue-1/commit message)
+            - [] Does the commit message explain the change made?
+            - [] Did you deploy to staging/UAT?
+            - [] Were the changes approved by the stakeholders?
+            
+            ## What?
+            <!--- Please describe in detail what this PR does. -->
+            <!--- Add a list of changes if needed -->
+            
+            ## Why?
+            <!--- One sentence describing why this is necessary. -->
+            
+            ## How?
+            <!--- High-level description of implementation. -->
+            
+            ## Testing?
+            <!--- Did you write tests? Describe how you tested it. -->
+            
+            ## Documentation?
+            <!--- Does this change require updates to documentation? Please add links to docs if needed. -->
+            
+            ## Anything Else?
+            <!--- Add any extra information that might be useful for a reviewer. -->

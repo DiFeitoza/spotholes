@@ -14,5 +14,8 @@ O sistema será composto principalmente por duas aplicações desenvolvidas em F
 ## Processo de Desenvolvimento
 O desenvolvimento deste sistema será feito com base na metodologia Scrum Solo disponível no trabalho acadêmico [Software process for individual development](https://ieeexplore.ieee.org/document/7521555), que também possui uma página de consulta:  https://scrumsolo.wordpress.com/.
 
+## Protótipo da Aplicação
+O Figma está sendo a ferramenta principal para prototipação das funcionalidades dos apps e criação das artes da aplicação, como o ícone principal da aplicação e da splash screen, ícones gerais para botões e objetos do mapa. Aqui está o link para visualização do projeto [Projeto Figma - SpotHoles](https://www.figma.com/design/VyfLQRwHeLqK02xqOG7HmF/Spothole-Pages?node-id=0-1&t=QHdkZdDoQbxLGabR-1).
+
 ## Considerações gerais
 Este projeto será desenvolvido como parte do meu trabalho de conclusão de curso de graduação em Engenharia de Software na Universidade Federal do Ceará.
