@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:signals/signals_flutter.dart';
-import 'package:spotholes_android/utilities/dark_mode_context_extension.dart';
-import 'package:spotholes_android/utilities/vibration_manager.dart';
+import 'package:watch_ble_connection_plugin/watch_ble_connection_plugin.dart';
 
 import '../controllers/navigation_controller.dart';
 import '../controllers/route_controller.dart';
@@ -10,6 +9,8 @@ import '../models/spothole.dart';
 import '../package/custom_info_window.dart';
 import '../utilities/constants.dart';
 import '../utilities/custom_icons.dart';
+import '../utilities/dark_mode_context_extension.dart';
+import '../utilities/vibration_manager.dart';
 import '../widgets/button/custom_floating_action_button.dart';
 import '../widgets/draggable_scrollable_sheet/navigation_draggable_sheet.dart';
 import '../widgets/nav_route_steps_page_view.dart';
@@ -46,32 +47,86 @@ class _NavigationPageState extends State<NavigationPage> {
   late final _isPageViewUpdateCamera =
       _navigationController.isPageViewMoveCamera;
 
+  late int countSpotholesInRoute;
+  late String spotholeFomattedDistance;
+  late bool isDeephole;
+  final _watchConnected = signal(true);
+
+  @override
+  void initState() {
+    super.initState();
+    _currentSpotholeIndex.listen(context, onCurrentSpotholeIndexChange);
+    _currentSpotholeDistance.listen(context, onCurrentSpotholeDistanceChange);
+    WatchConnection.sendMessage(
+      {"connectedOnNavigationPage": true},
+    );
+  }
+
+  void onCurrentSpotholeIndexChange() {
+    countSpotholesInRoute =
+        _spotholesInRoute.value.length - _currentSpotholeIndex.value;
+    isDeephole = _currentSpotholeIndex.value < _spotholesInRoute.value.length
+        ? _spotholesInRoute.value[_currentSpotholeIndex.value].type ==
+            Type.deepHole
+        : false;
+    setState(() {
+      countSpotholesInRoute;
+      isDeephole;
+    });
+    WatchConnection.sendMessage(
+      {"isDeephole": isDeephole},
+    );
+    WatchConnection.sendMessage(
+      {"countSpotholesInRoute": countSpotholesInRoute},
+    );
+  }
+
+  void onCurrentSpotholeDistanceChange() {
+    if (_currentSpotholeDistance.value > 1000) {
+      final kilometerDistance = _currentSpotholeDistance.value / 1000;
+      spotholeFomattedDistance = 'a ${kilometerDistance.toStringAsFixed(1)} km';
+    } else {
+      spotholeFomattedDistance =
+          '${_currentSpotholeDistance.value.truncate()} m';
+    }
+    setState(() {
+      spotholeFomattedDistance;
+    });
+    if (_currentSpotholeDistance.value != double.infinity) {
+      WatchConnection.sendMessage(
+        {"currentSpotholeDistance": _currentSpotholeDistance.value},
+      );
+    }
+  }
+
   void onTrackLocation() {
     _navigationController.onTrackLocation();
   }
 
-  late final isDeephole = computed(
-    () => _currentSpotholeIndex.value < _spotholesInRoute.value.length
-        ? _spotholesInRoute.value[_currentSpotholeIndex.value].type ==
-            Type.deepHole
-        : false,
-  );
-
-  late final spotholeFomattedDistance = computed(() {
-    if (_currentSpotholeDistance.value > 1000) {
-      final kilometerDistance = _currentSpotholeDistance.value / 1000;
-      return 'a ${kilometerDistance.toStringAsFixed(1)} km';
-    } else {
-      return '${_currentSpotholeDistance.value.truncate()} m';
-    }
-  });
-
-  late final countSpotholesInRoute = computed(
-      () => _spotholesInRoute.value.length - _currentSpotholeIndex.value);
+  void watchConnect() {
+    _watchConnected.value = !_watchConnected.value;
+    WatchConnection.sendMessage(
+      {"connectedOnNavigationPage": _watchConnected.value},
+    );
+    WatchConnection.sendMessage(
+      {"isDeephole": isDeephole},
+    );
+    WatchConnection.sendMessage(
+      {"currentSpotholeDistance": _currentSpotholeDistance.value},
+    );
+    WatchConnection.sendMessage(
+      {"countSpotholesInRoute": countSpotholesInRoute},
+    );
+  }
 
   @override
   void dispose() {
-    NavigationController.dispose();
+    // NavigationController.dispose();
+    // _currentSpotholeIndex.dispose();
+    // _currentSpotholeDistance.dispose();
+    WatchConnection.sendMessage(
+      {"connectedOnNavigationPage": false},
+    );
     super.dispose();
   }
 
@@ -110,23 +165,22 @@ class _NavigationPageState extends State<NavigationPage> {
                         if (_currentSpotholeDistance.value < 500)
                           Container(
                             width: double.infinity,
-                            color: isDeephole.value
-                                ? redSecundaryColor
-                                : Colors.yellow,
+                            color:
+                                isDeephole ? redAlertColor : yellowAlertColor,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                isDeephole.value
+                                isDeephole
                                     ? CustomIcons.potholeRedSignImageLarge
                                     : CustomIcons.potholeSignImageLarge,
                                 const SizedBox(width: 10),
                                 Text(
-                                  '$spotholeFomattedDistance',
+                                  spotholeFomattedDistance,
                                   style: Theme.of(context)
                                       .textTheme
                                       .displayLarge!
                                       .copyWith(
-                                        color: isDeephole.value
+                                        color: isDeephole
                                             ? Colors.white
                                             : Colors.black,
                                       ),
@@ -147,7 +201,7 @@ class _NavigationPageState extends State<NavigationPage> {
                                     ),
                                     child: Center(
                                       child: Text(
-                                        countSpotholesInRoute.value == 1
+                                        countSpotholesInRoute == 1
                                             ? '$countSpotholesInRoute alerta'
                                             : '$countSpotholesInRoute alertas',
                                         style: Theme.of(context)
@@ -167,14 +221,14 @@ class _NavigationPageState extends State<NavigationPage> {
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          isDeephole.value
+                                          isDeephole
                                               ? CustomIcons
                                                   .potholeRedSignImageSmall
                                               : CustomIcons
                                                   .potholeSignImageSmall,
                                           const SizedBox(width: 10),
                                           Text(
-                                            '$spotholeFomattedDistance',
+                                            spotholeFomattedDistance,
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .titleLarge,
@@ -248,34 +302,71 @@ class _NavigationPageState extends State<NavigationPage> {
                         Positioned(
                           top: 0,
                           left: 8,
-                          child: Tooltip(
-                            message: VibrationManager.isVibrationActive.value
-                                ? 'Desativar alerta por vibração'
-                                : 'Ativar alerta por vibração',
-                            child: ElevatedButton(
-                              onPressed: () =>
-                                  VibrationManager.toggleVibrationAlert(),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 8),
-                                minimumSize: const Size(4, 4),
-                                shape: RoundedRectangleBorder(
-                                  side: const BorderSide(width: 0.5),
-                                  borderRadius: BorderRadius.circular(16),
+                          child: Column(
+                            children: [
+                              Tooltip(
+                                // TODO Implementar a lógica de conexão com handshake, bidirecional
+                                message: _watchConnected.value
+                                    ? 'Desconectar relógio'
+                                    : 'Conectar relógio',
+                                child: ElevatedButton(
+                                  onPressed: () => watchConnect(),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 8),
+                                    minimumSize: const Size(4, 4),
+                                    shape: RoundedRectangleBorder(
+                                      side: const BorderSide(width: 0.5),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: _watchConnected.value
+                                      ? const Icon(Icons.watch,
+                                          color: Colors.black)
+                                      : const Stack(
+                                          // alignment: Alignment.center,
+                                          children: [
+                                            Icon(Icons.watch,
+                                                color: Colors.black),
+                                            Icon(Icons.close,
+                                                color: Colors.black),
+                                          ],
+                                        ),
                                 ),
                               ),
-                              child: VibrationManager.isVibrationActive.value
-                                  ? const Icon(Icons.vibration,
-                                      color: Colors.black)
-                                  : const Stack(
-                                      // alignment: Alignment.center,
-                                      children: [
-                                        Icon(Icons.phone_android,
-                                            color: Colors.black),
-                                        Icon(Icons.close, color: Colors.black),
-                                      ],
+                              Tooltip(
+                                message:
+                                    VibrationManager.isVibrationActive.value
+                                        ? 'Desativar alerta por vibração'
+                                        : 'Ativar alerta por vibração',
+                                child: ElevatedButton(
+                                  onPressed: () =>
+                                      VibrationManager.toggleVibrationAlert(),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 8),
+                                    minimumSize: const Size(4, 4),
+                                    shape: RoundedRectangleBorder(
+                                      side: const BorderSide(width: 0.5),
+                                      borderRadius: BorderRadius.circular(16),
                                     ),
-                            ),
+                                  ),
+                                  child:
+                                      VibrationManager.isVibrationActive.value
+                                          ? const Icon(Icons.vibration,
+                                              color: Colors.black)
+                                          : const Stack(
+                                              // alignment: Alignment.center,
+                                              children: [
+                                                Icon(Icons.phone_android,
+                                                    color: Colors.black),
+                                                Icon(Icons.close,
+                                                    color: Colors.black),
+                                              ],
+                                            ),
+                                ),
+                              )
+                            ],
                           ),
                         ),
                         NavigationDraggableSheet(

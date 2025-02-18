@@ -57,6 +57,7 @@ dependencies:
   expandable_page_view: ^1.0.17
   maps_toolkit: ^3.0.0
   vibration: ^2.0.1
+  watch_ble_connection_plugin: ^1.0.1
 
 dev_dependencies:
   flutter_test:

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart' hide Step;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:maps_toolkit/maps_toolkit.dart' as mtk;
 import 'package:signals/signals_flutter.dart';
-import 'package:spotholes_android/utilities/point_on_route_haversine.dart';
 
 import '../controllers/route_controller.dart';
 import '../utilities/constants.dart';
+import '../utilities/point_on_route_haversine.dart';
 
 class NavigationService {
   final RouteController _routeController;
@@ -84,6 +84,7 @@ class NavigationService {
 
   void updateCurrentLocationOnRouteProgress(
       LatLng currentLocation, mtk.LatLng currentLocationMkt) {
+    // TODO BUG Tratar exceção quando a rota é 1 ponto, sim o usuário pode formar uma rota curta!
     final currentLocationProjectionPoint = projectionPointOnSegment(
       currentLocation,
       _routePolylineCoordinatesSignal.value[0],
